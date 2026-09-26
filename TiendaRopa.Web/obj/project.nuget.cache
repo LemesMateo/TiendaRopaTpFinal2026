@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "5IRhWS2+t+k=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\mateo\\source\\repos\\TiendaRopa\\TiendaRopa.Web\\TiendaRopa.Web.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\mateo\\.nuget\\packages\\microsoft.aspnetcore.app.internal.assets\\10.0.12\\microsoft.aspnetcore.app.internal.assets.10.0.12.nupkg.sha512"
+  ],
+  "logs": []
+}

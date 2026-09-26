@@ -1,0 +1,104 @@
+@* Campo de formulario con etiqueta, ayuda y error.
+   El input se renderiza internamente para que sus estilos aislados
+   apliquen correctamente (CSS isolation). Soporta @bind-Value. *@
+<div class="vr-field @(HasError ? "vr-field--error" : null) @Class">
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <label class="vr-field__label" for="@fieldId">@Label</label>
+    }
+
+    <div class="vr-field__control">
+        <input id="@fieldId"
+               class="vr-field__input"
+               type="@EffectiveType"
+               value="@Value"
+               placeholder="@Placeholder"
+               autocomplete="@AutoComplete"
+               aria-describedby="@(HelpId ?? ErrorId)"
+               aria-invalid="@(HasError ? "true" : null)"
+               @oninput="HandleInput" />
+
+        @if (IsPassword && Revealable)
+        {
+            <button type="button"
+                    class="vr-field__reveal"
+                    @onclick="ToggleReveal"
+                    aria-pressed="@revealed"
+                    aria-label="@(revealed ? "Ocultar contraseña" : "Mostrar contraseña")">
+                <AppIcon Icon="@(revealed ? "visibility_off" : "visibility")" Size="20" />
+                <span>@(revealed ? "Ocultar" : "Mostrar")</span>
+            </button>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Help))
+    {
+        <small class="vr-field__help" id="@HelpId">@Help</small>
+    }
+    @if (!string.IsNullOrWhiteSpace(Error))
+    {
+        <small class="vr-field__error" id="@ErrorId" role="alert">@Error</small>
+    }
+</div>
+
+@code {
+    private static int counter;
+    private readonly string fieldId = $"vr-field-{Interlocked.Increment(ref counter)}";
+    private bool revealed;
+
+    /// <summary>Etiqueta del campo.</summary>
+    [Parameter]
+    public string? Label { get; set; }
+
+    /// <summary>Valor del input (soporta @bind-Value).</summary>
+    [Parameter]
+    public string? Value { get; set; }
+
+    /// <summary>Notificación de cambios del valor.</summary>
+    [Parameter]
+    public EventCallback<string?> ValueChanged { get; set; }
+
+    /// <summary>Tipo HTML: text | email | password | tel | number...</summary>
+    [Parameter]
+    public string Type { get; set; } = "text";
+
+    [Parameter]
+    public string? Placeholder { get; set; }
+
+    /// <summary>Valor para autocomplete del navegador.</summary>
+    [Parameter]
+    public string? AutoComplete { get; set; }
+
+    /// <summary>Ayuda contextual bajo el campo.</summary>
+    [Parameter]
+    public string? Help { get; set; }
+
+    /// <summary>Mensaje de error (role="alert").</summary>
+    [Parameter]
+    public string? Error { get; set; }
+
+    /// <summary>Permite mostrar/ocultar la contraseña (Type="password").</summary>
+    [Parameter]
+    public bool Revealable { get; set; } = true;
+
+    /// <summary>Clases CSS adicionales.</summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    private bool IsPassword => string.Equals(Type, "password", StringComparison.OrdinalIgnoreCase);
+
+    private string EffectiveType => IsPassword && revealed ? "text" : Type;
+
+    private bool HasError => !string.IsNullOrWhiteSpace(Error);
+
+    private string? HelpId => string.IsNullOrWhiteSpace(Help) ? null : $"{fieldId}-help";
+
+    private string? ErrorId => string.IsNullOrWhiteSpace(Error) ? null : $"{fieldId}-error";
+
+    private async Task HandleInput(ChangeEventArgs args)
+    {
+        await ValueChanged.InvokeAsync(args.Value?.ToString());
+    }
+
+    private void ToggleReveal() => revealed = !revealed;
+}

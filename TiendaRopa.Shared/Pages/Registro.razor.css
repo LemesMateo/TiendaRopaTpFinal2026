@@ -1,0 +1,41 @@
+/* Detalles propios del Registro */
+
+.auth-pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--vr-space-3);
+}
+
+@media (max-width: 420px) {
+    .auth-pair {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.auth-terms {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--vr-space-2);
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text);
+    line-height: 1.4;
+}
+
+.auth-terms input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    accent-color: var(--vr-primary);
+    flex: none;
+    cursor: pointer;
+}
+
+.auth-terms label {
+    cursor: pointer;
+}
+
+.auth-terms-error {
+    color: var(--vr-danger);
+    font-size: 0.8rem;
+    font-weight: 600;
+}

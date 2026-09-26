@@ -1,0 +1,33 @@
+/* Detalles propios del Login */
+
+.auth-forgot[b-w9f0xqym9u] {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: calc(var(--vr-space-1) * -1);
+}
+
+.auth-link[b-w9f0xqym9u] {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    min-height: var(--vr-tap-min);
+    font-size: var(--vr-fs-sm);
+    font-weight: 600;
+    color: var(--vr-primary);
+    text-decoration: none;
+}
+
+.auth-link:hover[b-w9f0xqym9u] {
+    color: var(--vr-primary-hover);
+    text-decoration: underline;
+}
+
+.auth-link-inline[b-w9f0xqym9u] {
+    font-weight: 700;
+    color: var(--vr-primary);
+    text-decoration: none;
+}
+
+.auth-link-inline:hover[b-w9f0xqym9u] {
+    text-decoration: underline;
+}

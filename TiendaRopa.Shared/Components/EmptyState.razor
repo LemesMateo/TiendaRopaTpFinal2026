@@ -1,0 +1,38 @@
+<div class="vr-empty @Class">
+    <span class="vr-empty__icon" aria-hidden="true">
+        <AppIcon Icon="@Icon" Size="40" />
+    </span>
+    <h3 class="vr-empty__title">@Title</h3>
+    @if (!string.IsNullOrWhiteSpace(Description))
+    {
+        <p class="vr-empty__desc">@Description</p>
+    }
+    @if (ChildContent is not null)
+    {
+        <div class="vr-empty__actions">
+            @ChildContent
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>Icono Material Symbols del estado.</summary>
+    [Parameter]
+    public string Icon { get; set; } = "info";
+
+    /// <summary>Título del estado.</summary>
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>Descripción breve.</summary>
+    [Parameter]
+    public string? Description { get; set; }
+
+    /// <summary>Acciones opcionales (botones, enlaces).</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Clases CSS adicionales.</summary>
+    [Parameter]
+    public string? Class { get; set; }
+}

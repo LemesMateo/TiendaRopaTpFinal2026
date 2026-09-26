@@ -1,0 +1,75 @@
+@* Panel compartido de las pantallas de cuenta (Login / Registro).
+   Los fragmentos los declara la página, pero los estilos de estructura
+   viven aquí: el wrapper es propiedad de este componente. *@
+<div class="auth-panel">
+    <div class="auth-panel__brand">
+        <BrandLogo Size="lg" />
+    </div>
+
+    <section class="auth-panel__card" aria-labelledby="auth-title">
+        <h1 class="auth-panel__title" id="auth-title">@Title</h1>
+        @if (!string.IsNullOrWhiteSpace(Subtitle))
+        {
+            <p class="auth-panel__sub">@Subtitle</p>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Notice))
+        {
+            <p class="auth-panel__notice" role="status">@Notice</p>
+        }
+
+        <form class="auth-panel__form" @onsubmit="HandleSubmit" @onsubmit:preventDefault>
+            <div class="auth-panel__fields">
+                @Fields
+            </div>
+
+            <div class="auth-panel__actions">
+                @Actions
+            </div>
+        </form>
+
+        @if (Footer is not null)
+        {
+            <div class="auth-panel__footer">
+                @Footer
+            </div>
+        }
+    </section>
+
+    <p class="auth-panel__help">
+        <AppIcon Icon="help_outline" Size="16" />
+        ¿Necesitás ayuda? Contactanos y te ayudamos.
+    </p>
+</div>
+
+@code {
+    /// <summary>Título de la pantalla.</summary>
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>Subtítulo bajo el título.</summary>
+    [Parameter]
+    public string? Subtitle { get; set; }
+
+    /// <summary>Mensaje informativo (role="status"), por ejemplo aviso de API pendiente.</summary>
+    [Parameter]
+    public string? Notice { get; set; }
+
+    /// <summary>Campos del formulario.</summary>
+    [Parameter]
+    public RenderFragment? Fields { get; set; }
+
+    /// <summary>Acciones principales (botón de envío).</summary>
+    [Parameter]
+    public RenderFragment? Actions { get; set; }
+
+    /// <summary>Pie: enlaces alternativos (crear cuenta / iniciar sesión).</summary>
+    [Parameter]
+    public RenderFragment? Footer { get; set; }
+
+    /// <summary>Se invoca al enviar el formulario (Enter o botón submit).</summary>
+    [Parameter]
+    public EventCallback OnSubmit { get; set; }
+
+    private async Task HandleSubmit() => await OnSubmit.InvokeAsync();
+}

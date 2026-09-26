@@ -1,0 +1,120 @@
+/* Catálogo — mockup 04_catalogo_filtros.png */
+
+.cat-head[b-k6p92tgua0] {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--vr-space-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--vr-space-4);
+}
+
+.cat-head h1[b-k6p92tgua0] {
+    margin: 0;
+}
+
+.cat-cats[b-k6p92tgua0] {
+    margin-block: var(--vr-space-4);
+}
+
+/* ---- Selects en píldora (Talle / Color / Precio) ---- */
+.cat-filters[b-k6p92tgua0] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--vr-space-2);
+    margin-bottom: var(--vr-space-5);
+}
+
+.cat-select[b-k6p92tgua0] {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    min-height: var(--vr-tap-min);
+    padding: 0.3rem 0.9rem;
+    border-radius: var(--vr-radius-pill);
+    border: 1.5px solid var(--vr-border);
+    background-color: var(--vr-surface);
+    box-shadow: var(--vr-shadow-sm);
+    font-size: var(--vr-fs-sm);
+    font-weight: 600;
+    color: var(--vr-plum-strong);
+    cursor: pointer;
+    transition: border-color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.cat-select:hover[b-k6p92tgua0] {
+    border-color: var(--vr-plum-soft);
+}
+
+.cat-select__text[b-k6p92tgua0] {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--vr-space-1);
+    color: var(--vr-plum-soft);
+    white-space: nowrap;
+}
+
+.cat-select select[b-k6p92tgua0] {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-weight: 600;
+    color: var(--vr-text);
+    cursor: pointer;
+    outline: none;
+    padding: 0;
+    min-height: auto;
+    max-width: 11rem;
+}
+
+/* ---- Barra de resultados y orden ---- */
+.cat-toolbar[b-k6p92tgua0] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--vr-space-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--vr-space-4);
+}
+
+.cat-count[b-k6p92tgua0] {
+    margin: 0;
+    font-size: var(--vr-fs-sm);
+    font-weight: 600;
+    color: var(--vr-text-muted);
+}
+
+.cat-sort[b-k6p92tgua0] {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text-muted);
+}
+
+.cat-sort select[b-k6p92tgua0] {
+    appearance: none;
+    -webkit-appearance: none;
+    min-height: var(--vr-tap-min);
+    padding: 0.3rem 1rem;
+    border-radius: var(--vr-radius-pill);
+    border: 1.5px solid var(--vr-border);
+    background-color: var(--vr-surface);
+    box-shadow: var(--vr-shadow-sm);
+    font-weight: 600;
+    color: var(--vr-plum-strong);
+    cursor: pointer;
+    outline: none;
+    transition: border-color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.cat-sort select:hover[b-k6p92tgua0] {
+    border-color: var(--vr-plum-soft);
+}
+
+.cat-grid[b-k6p92tgua0] {
+    margin-top: var(--vr-space-1);
+}

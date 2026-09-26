@@ -1,0 +1,79 @@
+.vr-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--vr-space-2);
+    border-radius: var(--vr-radius-pill);
+    border: 1.5px solid transparent;
+    font-family: var(--vr-font-body);
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+    user-select: none;
+    transition: background-color var(--vr-dur-fast) var(--vr-ease), color var(--vr-dur-fast) var(--vr-ease), border-color var(--vr-dur-fast) var(--vr-ease), box-shadow var(--vr-dur-fast) var(--vr-ease), transform var(--vr-dur-fast) var(--vr-ease);
+}
+
+.vr-btn--md {
+    min-height: 48px;
+    padding-inline: 1.35rem;
+    font-size: var(--vr-fs-base);
+}
+
+.vr-btn--sm {
+    min-height: 40px;
+    padding-inline: 0.95rem;
+    font-size: var(--vr-fs-sm);
+    gap: var(--vr-space-1);
+}
+
+@media (pointer: coarse) {
+    .vr-btn--sm {
+        min-height: var(--vr-tap-min);
+    }
+}
+
+.vr-btn--primary {
+    background-color: var(--vr-primary);
+    color: var(--vr-primary-contrast);
+    box-shadow: var(--vr-shadow-sm);
+}
+
+.vr-btn--primary:hover:not(:disabled) {
+    background-color: var(--vr-primary-hover);
+}
+
+.vr-btn--primary:active:not(:disabled) {
+    background-color: var(--vr-primary-active);
+    transform: translateY(1px);
+}
+
+.vr-btn--outline {
+    background-color: var(--vr-surface);
+    border-color: var(--vr-primary);
+    color: var(--vr-primary);
+}
+
+.vr-btn--outline:hover:not(:disabled) {
+    background-color: var(--vr-primary-soft);
+}
+
+.vr-btn--ghost {
+    background-color: transparent;
+    color: var(--vr-primary);
+}
+
+.vr-btn--ghost:hover:not(:disabled) {
+    background-color: var(--vr-primary-soft);
+}
+
+.vr-btn--block {
+    width: 100%;
+}
+
+.vr-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}

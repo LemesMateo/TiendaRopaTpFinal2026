@@ -1,0 +1,84 @@
+.auth-panel[b-m54yo7e2n7] {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--vr-space-5);
+    width: 100%;
+    max-width: 460px;
+    margin-inline: auto;
+    padding-block: var(--vr-space-4) var(--vr-space-8);
+}
+
+.auth-panel__brand[b-m54yo7e2n7] {
+    display: flex;
+    justify-content: center;
+    padding-block: var(--vr-space-2);
+}
+
+.auth-panel__card[b-m54yo7e2n7] {
+    width: 100%;
+    background-color: var(--vr-surface);
+    border: 1px solid rgba(237, 229, 219, 0.8);
+    border-radius: var(--vr-radius-xl);
+    box-shadow: var(--vr-shadow-md);
+    padding: var(--vr-space-6) var(--vr-space-5);
+}
+
+@media (max-width: 380px) {
+    .auth-panel__card[b-m54yo7e2n7] {
+        padding: var(--vr-space-5) var(--vr-space-4);
+    }
+}
+
+.auth-panel__title[b-m54yo7e2n7] {
+    text-align: center;
+    font-size: var(--vr-fs-2xl);
+    margin-bottom: var(--vr-space-2);
+}
+
+.auth-panel__sub[b-m54yo7e2n7] {
+    text-align: center;
+    color: var(--vr-text-muted);
+    margin-bottom: var(--vr-space-5);
+}
+
+.auth-panel__notice[b-m54yo7e2n7] {
+    background-color: var(--vr-lavender);
+    color: var(--vr-lavender-text);
+    border-radius: var(--vr-radius-md);
+    padding: var(--vr-space-3);
+    font-size: var(--vr-fs-sm);
+    margin-bottom: var(--vr-space-4);
+}
+
+.auth-panel__fields[b-m54yo7e2n7] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--vr-space-4);
+}
+
+.auth-panel__actions[b-m54yo7e2n7] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--vr-space-3);
+    margin-top: var(--vr-space-5);
+}
+
+.auth-panel__footer[b-m54yo7e2n7] {
+    margin-top: var(--vr-space-4);
+    text-align: center;
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text-muted);
+}
+
+.auth-panel__help[b-m54yo7e2n7] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--vr-space-2);
+    text-align: center;
+    font-size: var(--vr-fs-xs);
+    color: var(--vr-text-subtle);
+    margin: 0;
+    max-width: 46ch;
+}

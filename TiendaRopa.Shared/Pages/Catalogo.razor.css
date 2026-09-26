@@ -1,0 +1,120 @@
+/* Catálogo — mockup 04_catalogo_filtros.png */
+
+.cat-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--vr-space-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--vr-space-4);
+}
+
+.cat-head h1 {
+    margin: 0;
+}
+
+.cat-cats {
+    margin-block: var(--vr-space-4);
+}
+
+/* ---- Selects en píldora (Talle / Color / Precio) ---- */
+.cat-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--vr-space-2);
+    margin-bottom: var(--vr-space-5);
+}
+
+.cat-select {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    min-height: var(--vr-tap-min);
+    padding: 0.3rem 0.9rem;
+    border-radius: var(--vr-radius-pill);
+    border: 1.5px solid var(--vr-border);
+    background-color: var(--vr-surface);
+    box-shadow: var(--vr-shadow-sm);
+    font-size: var(--vr-fs-sm);
+    font-weight: 600;
+    color: var(--vr-plum-strong);
+    cursor: pointer;
+    transition: border-color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.cat-select:hover {
+    border-color: var(--vr-plum-soft);
+}
+
+.cat-select__text {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--vr-space-1);
+    color: var(--vr-plum-soft);
+    white-space: nowrap;
+}
+
+.cat-select select {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-weight: 600;
+    color: var(--vr-text);
+    cursor: pointer;
+    outline: none;
+    padding: 0;
+    min-height: auto;
+    max-width: 11rem;
+}
+
+/* ---- Barra de resultados y orden ---- */
+.cat-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--vr-space-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--vr-space-4);
+}
+
+.cat-count {
+    margin: 0;
+    font-size: var(--vr-fs-sm);
+    font-weight: 600;
+    color: var(--vr-text-muted);
+}
+
+.cat-sort {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text-muted);
+}
+
+.cat-sort select {
+    appearance: none;
+    -webkit-appearance: none;
+    min-height: var(--vr-tap-min);
+    padding: 0.3rem 1rem;
+    border-radius: var(--vr-radius-pill);
+    border: 1.5px solid var(--vr-border);
+    background-color: var(--vr-surface);
+    box-shadow: var(--vr-shadow-sm);
+    font-weight: 600;
+    color: var(--vr-plum-strong);
+    cursor: pointer;
+    outline: none;
+    transition: border-color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.cat-sort select:hover {
+    border-color: var(--vr-plum-soft);
+}
+
+.cat-grid {
+    margin-top: var(--vr-space-1);
+}

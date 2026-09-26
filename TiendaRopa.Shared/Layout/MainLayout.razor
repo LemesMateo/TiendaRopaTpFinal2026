@@ -1,0 +1,174 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject NavigationManager Navigation
+
+<div class="app-shell" @onkeydown="HandleKeyDown">
+
+    <a class="app-skip vr-sr-only" href="#main-content">Saltar al contenido principal</a>
+
+    @* Barra superior: menú, marca y atajo al carrito (mockups 04–08) *@
+    <header class="app-header">
+        <button type="button"
+                class="app-header__btn app-header__menu"
+                @onclick="ToggleDrawer"
+                aria-label="Abrir menú de navegación"
+                aria-expanded="@drawerOpen"
+                aria-controls="app-drawer"
+                @ref="menuButton">
+            <AppIcon Icon="menu" Size="26" />
+        </button>
+
+        <a href="/" class="app-header__brand" aria-label="Velvet Rose Boutique — Ir al inicio">
+            <BrandLogo Size="sm" />
+        </a>
+
+        <a href="/carrito" class="app-header__btn app-header__cart" aria-label="Carrito de compras">
+            <AppIcon Icon="shopping_cart" Size="26" />
+        </a>
+    </header>
+
+    @* Cajón lateral de navegación (móvil y tablet) *@
+    <div class="app-backdrop @(drawerOpen ? "is-open" : "")" @onclick="CloseDrawer"></div>
+
+    <nav id="app-drawer"
+         class="app-drawer @(drawerOpen ? "is-open" : "")"
+         aria-label="Menú de navegación"
+         aria-hidden="@(!drawerOpen)"
+         inert="@(drawerOpen ? null : "true")">
+        <div class="app-drawer__head">
+            <BrandLogo Size="sm" />
+            <button type="button" class="app-header__btn" @onclick="CloseDrawer" aria-label="Cerrar menú">
+                <AppIcon Icon="close" Size="24" />
+            </button>
+        </div>
+        <ul class="app-navlist">
+            @foreach (var item in NavItems)
+            {
+                var active = IsActive(item.Href, item.Exact);
+                <li>
+                    <a href="@item.Href"
+                       class="@(active ? "is-active" : null)"
+                       aria-current="@(active ? "page" : null)">
+                        <AppIcon Icon="@item.Icon" Size="22" Filled="@active" />
+                        <span>@item.Label</span>
+                    </a>
+                </li>
+            }
+        </ul>
+    </nav>
+
+    @* Barra lateral fija en escritorio (≥1024px) *@
+    <aside class="app-sidebar" aria-label="Navegación principal">
+        <ul class="app-navlist">
+            @foreach (var item in NavItems)
+            {
+                var active = IsActive(item.Href, item.Exact);
+                <li>
+                    <a href="@item.Href"
+                       class="@(active ? "is-active" : null)"
+                       aria-current="@(active ? "page" : null)">
+                        <AppIcon Icon="@item.Icon" Size="22" Filled="@active" />
+                        <span>@item.Label</span>
+                    </a>
+                </li>
+            }
+        </ul>
+    </aside>
+
+    <main class="app-main" id="main-content" tabindex="-1">
+        <div class="app-container">
+            @Body
+        </div>
+    </main>
+
+    @* Navegación inferior en teléfono (mockups 03–07) *@
+    <nav class="app-bottomnav" aria-label="Navegación principal">
+        @foreach (var item in NavItems)
+        {
+            var active = IsActive(item.Href, item.Exact);
+            <a href="@item.Href"
+               class="app-bottomnav__link @(active ? "is-active" : null)"
+               aria-current="@(active ? "page" : null)">
+                <AppIcon Icon="@item.Icon" Size="24" Filled="@active" />
+                <span class="app-bottomnav__label">@item.Label</span>
+            </a>
+        }
+    </nav>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    Ocurrió un error inesperado.
+    <a href="." class="reload">Reintentar</a>
+    <span class="dismiss" aria-hidden="true"><AppIcon Icon="close" Size="16" /></span>
+</div>
+
+@code {
+    private static readonly (string Href, string Icon, string Label, bool Exact)[] NavItems =
+    [
+        ("/", "home", "Inicio", true),
+        ("/catalogo", "search", "Catálogo", false),
+        ("/carrito", "shopping_cart", "Carrito", false),
+        ("/login", "person", "Mi cuenta", false),
+    ];
+
+    private bool drawerOpen;
+    private string currentPath = "/";
+    private ElementReference menuButton;
+
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+        UpdateCurrentPath();
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        UpdateCurrentPath();
+        _ = InvokeAsync(() =>
+        {
+            CloseDrawer();
+            StateHasChanged();
+        });
+    }
+
+    private void UpdateCurrentPath()
+    {
+        var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var path = "/" + relative.Split('?')[0].TrimStart('/');
+        currentPath = path.Length > 1 ? path.TrimEnd('/') : path;
+    }
+
+    private bool IsActive(string href, bool exact)
+        => exact
+            ? currentPath == href
+            : currentPath.StartsWith(href, StringComparison.OrdinalIgnoreCase);
+
+    private void ToggleDrawer()
+    {
+        drawerOpen = !drawerOpen;
+        StateHasChanged();
+    }
+
+    private void CloseDrawer()
+    {
+        if (drawerOpen)
+        {
+            drawerOpen = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && drawerOpen)
+        {
+            CloseDrawer();
+            await menuButton.FocusAsync();
+        }
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+}

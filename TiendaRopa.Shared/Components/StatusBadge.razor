@@ -1,0 +1,28 @@
+<span class="@CssClass">
+    @if (!string.IsNullOrWhiteSpace(Icon))
+    {
+        <AppIcon Icon="@Icon" Size="16" />
+    }
+    @Text
+</span>
+
+@code {
+    /// <summary>Texto del indicador.</summary>
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = string.Empty;
+
+    /// <summary>Tono: success | warning | danger | info | neutral | primary.</summary>
+    [Parameter]
+    public string Tone { get; set; } = "neutral";
+
+    /// <summary>Icono previo al texto.</summary>
+    [Parameter]
+    public string? Icon { get; set; }
+
+    /// <summary>Clases CSS adicionales.</summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    private string CssClass =>
+        $"vr-badge vr-badge--{Tone} {Class}".Trim();
+}

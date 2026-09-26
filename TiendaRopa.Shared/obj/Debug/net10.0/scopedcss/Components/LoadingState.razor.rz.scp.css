@@ -1,0 +1,33 @@
+.vr-loading[b-cilpgq87p5] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--vr-space-3);
+    padding: var(--vr-space-6);
+    color: var(--vr-text-muted);
+    font-size: var(--vr-fs-sm);
+}
+
+.vr-loading__spinner[b-cilpgq87p5] {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2.5px solid var(--vr-primary-soft);
+    border-top-color: var(--vr-primary);
+    animation: vr-spin-b-cilpgq87p5 0.7s linear infinite;
+    flex: none;
+}
+
+@keyframes vr-spin-b-cilpgq87p5 {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vr-loading__spinner[b-cilpgq87p5] {
+        animation: none;
+        border-top-color: var(--vr-primary);
+        border-right-color: var(--vr-primary);
+    }
+}

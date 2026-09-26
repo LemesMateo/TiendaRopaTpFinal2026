@@ -1,0 +1,302 @@
+/* Shell de la aplicación Velvet Rose (mobile-first).
+   Móvil: header + contenido + bottom nav + cajón lateral.
+   ≥1024px: barra lateral fija, sin bottom nav ni cajón. */
+
+.app-shell {
+    min-height: 100dvh;
+    min-height: 100vh;
+}
+
+/* ---- Enlace de salto (accesibilidad por teclado) ---- */
+.app-skip:focus {
+    position: fixed;
+    top: var(--vr-space-2);
+    left: var(--vr-space-2);
+    z-index: 100;
+    width: auto;
+    height: auto;
+    clip: auto;
+    margin: 0;
+    overflow: visible;
+    padding: var(--vr-space-2) var(--vr-space-4);
+    background-color: var(--vr-surface);
+    color: var(--vr-plum-strong);
+    border: 1.5px solid var(--vr-primary);
+    border-radius: var(--vr-radius-pill);
+    box-shadow: var(--vr-shadow-md);
+    font-weight: 600;
+}
+
+/* ---- Barra superior ---- */
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: var(--vr-tap-min) 1fr var(--vr-tap-min);
+    align-items: center;
+    gap: var(--vr-space-2);
+    height: calc(var(--vr-header-h) + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-inline: var(--vr-space-3);
+    background-color: rgba(248, 244, 237, 0.94);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--vr-border);
+}
+
+.app-header__btn {
+    display: grid;
+    grid-column: 1;
+    place-items: center;
+    width: var(--vr-tap-min);
+    height: var(--vr-tap-min);
+    border: 0;
+    border-radius: 50%;
+    background-color: transparent;
+    color: var(--vr-plum-strong);
+    text-decoration: none;
+    transition: background-color var(--vr-dur-fast) var(--vr-ease), color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.app-header__btn:hover {
+    background-color: var(--vr-primary-soft);
+    color: var(--vr-primary);
+}
+
+.app-header__brand {
+    grid-column: 2;
+    justify-self: center;
+    color: inherit;
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--vr-tap-min);
+}
+
+.app-header__cart {
+    grid-column: 3;
+    justify-self: end;
+}
+
+/* ---- Cajón lateral (móvil/tablet) ---- */
+.app-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background-color: rgba(43, 29, 47, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--vr-dur) var(--vr-ease);
+}
+
+.app-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.app-drawer {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    width: min(84vw, 320px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--vr-space-4);
+    padding: calc(env(safe-area-inset-top, 0px) + var(--vr-space-3)) var(--vr-space-4) var(--vr-space-6);
+    background-color: var(--vr-surface);
+    box-shadow: var(--vr-shadow-lg);
+    overflow-y: auto;
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform var(--vr-dur) var(--vr-ease), visibility 0s linear var(--vr-dur);
+}
+
+.app-drawer.is-open {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform var(--vr-dur) var(--vr-ease), visibility 0s;
+}
+
+.app-drawer__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--vr-space-2);
+    padding-bottom: var(--vr-space-3);
+    border-bottom: 1px solid var(--vr-border);
+}
+
+/* ---- Lista de enlaces (cajón y barra lateral) ---- */
+.app-navlist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--vr-space-1);
+}
+
+.app-navlist a {
+    display: flex;
+    align-items: center;
+    gap: var(--vr-space-3);
+    min-height: 48px;
+    padding: 0.6rem 0.85rem;
+    border-radius: var(--vr-radius-md);
+    color: var(--vr-text);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color var(--vr-dur-fast) var(--vr-ease), color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.app-navlist a:hover {
+    background-color: var(--vr-primary-soft);
+    color: var(--vr-plum-strong);
+}
+
+.app-navlist a.is-active {
+    background-color: var(--vr-primary-soft);
+    color: var(--vr-primary);
+}
+
+/* ---- Contenido ---- */
+.app-main {
+    display: block;
+}
+
+.app-main:focus {
+    outline: none;
+}
+
+.app-container {
+    width: 100%;
+    max-width: var(--vr-content-max);
+    margin-inline: auto;
+    padding: var(--vr-space-5) var(--vr-space-4) calc(var(--vr-bottomnav-h) + env(safe-area-inset-bottom, 0px) + var(--vr-space-8));
+}
+
+/* ---- Navegación inferior (teléfono) ---- */
+.app-bottomnav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    background-color: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--vr-border);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -4px 16px rgba(43, 29, 47, 0.06);
+}
+
+.app-bottomnav__link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: var(--vr-bottomnav-h);
+    padding: 0.35rem 0.15rem;
+    color: var(--vr-text-muted);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    transition: color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.app-bottomnav__link:hover {
+    color: var(--vr-primary);
+}
+
+.app-bottomnav__link.is-active {
+    color: var(--vr-primary);
+}
+
+.app-bottomnav__label {
+    line-height: 1.1;
+    text-align: center;
+}
+
+/* ---- Barra lateral fija (escritorio ≥1024px) ---- */
+.app-sidebar {
+    display: none;
+}
+
+@media (min-width: 1024px) {
+    .app-sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 20;
+        width: var(--vr-sidebar-w);
+        display: block;
+        /* Comienza bajo la barra superior para no tapar el primer enlace */
+        padding: calc(env(safe-area-inset-top, 0px) + var(--vr-header-h) + var(--vr-space-4)) var(--vr-space-4) var(--vr-space-6);
+        background-color: var(--vr-surface);
+        border-right: 1px solid var(--vr-border);
+        overflow-y: auto;
+    }
+
+    .app-header {
+        padding-left: calc(var(--vr-sidebar-w) + var(--vr-space-3));
+    }
+
+    /* Sin cajón en escritorio: hay barra lateral permanente */
+    .app-header__menu,
+    .app-drawer,
+    .app-backdrop {
+        display: none;
+    }
+
+    .app-bottomnav {
+        display: none;
+    }
+
+    .app-main {
+        padding-left: var(--vr-sidebar-w);
+    }
+
+    .app-container {
+        padding: var(--vr-space-8) var(--vr-space-6) var(--vr-space-12);
+    }
+}
+
+/* ---- Bandeja de error de Blazor ---- */
+#blazor-error-ui {
+    color-scheme: light only;
+    background: var(--vr-plum-strong);
+    color: var(--vr-text-inverse);
+    bottom: 0;
+    box-shadow: 0 -1px 6px rgba(0, 0, 0, 0.25);
+    box-sizing: border-box;
+    display: none;
+    left: 0;
+    padding: 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+    font-family: var(--vr-font-body);
+}
+
+#blazor-error-ui a {
+    color: var(--vr-rose);
+    font-weight: 600;
+    margin-left: 0.5rem;
+    text-decoration: underline;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+    display: grid;
+    place-items: center;
+}

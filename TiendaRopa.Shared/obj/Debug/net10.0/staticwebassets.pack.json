@@ -1,0 +1,57 @@
+{
+  "Files": [
+    {
+      "Id": "c:\\Users\\mateo\\source\\repos\\TiendaRopa\\TiendaRopa.Shared\\obj\\Debug\\net10.0\\scopedcss\\projectbundle\\TiendaRopa.Shared.bundle.scp.css",
+      "PackagePath": "staticwebassets\\TiendaRopa.Shared.k444b02uh4.bundle.scp.css"
+    },
+    {
+      "Id": "c:\\Users\\mateo\\source\\repos\\TiendaRopa\\TiendaRopa.Shared\\wwwroot\\app.css",
+      "PackagePath": "staticwebassets\\app.css"
+    },
+    {
+      "Id": "c:\\Users\\mateo\\source\\repos\\TiendaRopa\\TiendaRopa.Shared\\wwwroot\\css\\velvet-base.css",
+      "PackagePath": "staticwebassets\\css\\velvet-base.css"
+    },
+    {
+      "Id": "c:\\Users\\mateo\\source\\repos\\TiendaRopa\\TiendaRopa.Shared\\wwwroot\\css\\velvet-icons.css",
+      "PackagePath": "staticwebassets\\css\\velvet-icons.css"
+    },
+    {
+      "Id": "c:\\Users\\mateo\\source\\repos\\TiendaRopa\\TiendaRopa.Shared\\wwwroot\\css\\velvet-tokens.css",
+      "PackagePath": "staticwebassets\\css\\velvet-tokens.css"
+    },
+    {
+      "Id": "c:\\Users\\mateo\\source\\repos\\TiendaRopa\\TiendaRopa.Shared\\wwwroot\\fonts\\inter-latin.woff2",
+      "PackagePath": "staticwebassets\\fonts\\inter-latin.woff2"
+    },
+    {
+      "Id": "c:\\Users\\mateo\\source\\repos\\TiendaRopa\\TiendaRopa.Shared\\wwwroot\\fonts\\material-symbols-outlined.woff2",
+      "PackagePath": "staticwebassets\\fonts\\material-symbols-outlined.woff2"
+    },
+    {
+      "Id": "c:\\Users\\mateo\\source\\repos\\TiendaRopa\\TiendaRopa.Shared\\wwwroot\\fonts\\playfair-display-latin.woff2",
+      "PackagePath": "staticwebassets\\fonts\\playfair-display-latin.woff2"
+    },
+    {
+      "Id": "obj\\Debug\\net10.0\\staticwebassets\\msbuild.TiendaRopa.Shared.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssetEndpoints.props"
+    },
+    {
+      "Id": "obj\\Debug\\net10.0\\staticwebassets\\msbuild.TiendaRopa.Shared.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net10.0\\staticwebassets\\msbuild.build.TiendaRopa.Shared.props",
+      "PackagePath": "build\\TiendaRopa.Shared.props"
+    },
+    {
+      "Id": "obj\\Debug\\net10.0\\staticwebassets\\msbuild.buildMultiTargeting.TiendaRopa.Shared.props",
+      "PackagePath": "buildMultiTargeting\\TiendaRopa.Shared.props"
+    },
+    {
+      "Id": "obj\\Debug\\net10.0\\staticwebassets\\msbuild.buildTransitive.TiendaRopa.Shared.props",
+      "PackagePath": "buildTransitive\\TiendaRopa.Shared.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

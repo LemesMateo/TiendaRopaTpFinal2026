@@ -1,0 +1,29 @@
+<button type="button"
+        class="@CssClass"
+        aria-pressed="@Selected"
+        @onclick="HandleClick">
+    @Text
+</button>
+
+@code {
+    /// <summary>Etiqueta del chip.</summary>
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = string.Empty;
+
+    /// <summary>Estado seleccionado.</summary>
+    [Parameter]
+    public bool Selected { get; set; }
+
+    /// <summary>Se notifica al pulsar.</summary>
+    [Parameter]
+    public EventCallback OnSelected { get; set; }
+
+    /// <summary>Clases CSS adicionales.</summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    private string CssClass =>
+        $"vr-chip {(Selected ? "vr-chip--on" : string.Empty)} {Class}".Trim();
+
+    private async Task HandleClick() => await OnSelected.InvokeAsync();
+}

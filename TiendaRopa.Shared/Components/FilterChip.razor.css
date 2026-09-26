@@ -1,0 +1,36 @@
+.vr-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--vr-space-1);
+    min-height: 40px;
+    padding: 0.4rem 1.05rem;
+    border-radius: var(--vr-radius-pill);
+    border: 1.5px solid var(--vr-border-strong);
+    background-color: var(--vr-surface);
+    color: var(--vr-text);
+    font-family: var(--vr-font-body);
+    font-size: var(--vr-fs-sm);
+    font-weight: 600;
+    white-space: nowrap;
+    flex: none;
+    transition: background-color var(--vr-dur-fast) var(--vr-ease), border-color var(--vr-dur-fast) var(--vr-ease), color var(--vr-dur-fast) var(--vr-ease);
+}
+
+@media (pointer: coarse) {
+    .vr-chip {
+        min-height: var(--vr-tap-min);
+    }
+}
+
+.vr-chip:hover {
+    border-color: var(--vr-primary);
+    color: var(--vr-primary);
+}
+
+.vr-chip--on,
+.vr-chip--on:hover {
+    background-color: var(--vr-primary);
+    border-color: var(--vr-primary);
+    color: var(--vr-primary-contrast);
+}

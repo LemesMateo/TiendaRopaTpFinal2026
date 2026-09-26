@@ -1,0 +1,49 @@
+<div class="@CssClass">
+    <AppIcon Icon="search" Size="20" Class="vr-search__icon" />
+    <input type="search"
+           class="vr-search__input"
+           value="@Value"
+           placeholder="@Placeholder"
+           aria-label="@Label"
+           @oninput="HandleInput" />
+    @if (!string.IsNullOrEmpty(Value))
+    {
+        <button type="button" class="vr-search__clear" @onclick="Clear" aria-label="Limpiar búsqueda">
+            <AppIcon Icon="close" Size="18" />
+        </button>
+    }
+</div>
+
+@code {
+    /// <summary>Texto actual del campo.</summary>
+    [Parameter]
+    public string? Value { get; set; }
+
+    /// <summary>Notificación de cambios (soporta @bind-Value).</summary>
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    /// <summary>Texto de referencia cuando el campo está vacío.</summary>
+    [Parameter]
+    public string Placeholder { get; set; } = "Buscar...";
+
+    /// <summary>Nombre accesible del campo.</summary>
+    [Parameter]
+    public string Label { get; set; } = "Buscar";
+
+    /// <summary>Clases CSS adicionales.</summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    private string CssClass => $"vr-search {Class}".Trim();
+
+    private async Task HandleInput(ChangeEventArgs args)
+    {
+        await ValueChanged.InvokeAsync(args.Value?.ToString() ?? string.Empty);
+    }
+
+    private async Task Clear()
+    {
+        await ValueChanged.InvokeAsync(string.Empty);
+    }
+}

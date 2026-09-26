@@ -1,0 +1,14 @@
+<div class="vr-loading @Class" role="status" aria-live="polite">
+    <span class="vr-loading__spinner" aria-hidden="true"></span>
+    <span class="vr-loading__text">@(string.IsNullOrWhiteSpace(Text) ? "Cargando..." : Text)</span>
+</div>
+
+@code {
+    /// <summary>Texto accesible del estado de carga.</summary>
+    [Parameter]
+    public string? Text { get; set; }
+
+    /// <summary>Clases CSS adicionales.</summary>
+    [Parameter]
+    public string? Class { get; set; }
+}

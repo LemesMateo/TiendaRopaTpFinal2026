@@ -1,0 +1,88 @@
+@page "/login"
+@using System.Text.RegularExpressions
+
+<PageTitle>Iniciar sesión — Velvet Rose Boutique</PageTitle>
+
+@* Login (mockup 01_login.png). Sólo UI y validación en cliente:
+   no existe servicio de autenticación hasta que haya API. *@
+
+<AuthPanel Title="Iniciar Sesión"
+           Subtitle="Accedé para seguir tus compras."
+           Notice="@notice"
+           OnSubmit="Submit">
+    <Fields>
+        <FormField Label="Email"
+                   Type="email"
+                   Placeholder="tu@email.com"
+                   AutoComplete="email"
+                   @bind-Value="email"
+                   Error="@GetError("email")" />
+
+        <FormField Label="Contraseña"
+                   Type="password"
+                   Placeholder="Tu contraseña"
+                   AutoComplete="current-password"
+                   @bind-Value="password"
+                   Error="@GetError("password")" />
+
+        <div class="auth-forgot">
+            <button type="button" class="auth-link" @onclick="RecoverPassword">
+                ¿Olvidaste tu contraseña?
+            </button>
+        </div>
+    </Fields>
+
+    <Actions>
+        <AppButton Variant="primary" FullWidth Icon="login" Type="submit">
+            Iniciar Sesión
+        </AppButton>
+    </Actions>
+
+    <Footer>
+        ¿No tenés cuenta? <a href="/registro" class="auth-link-inline">Crear cuenta</a>
+    </Footer>
+</AuthPanel>
+
+@code {
+    private string? email;
+    private string? password;
+    private string? notice;
+    private readonly Dictionary<string, string> errors = new();
+
+    private string? GetError(string field)
+        => errors.TryGetValue(field, out var message) ? message : null;
+
+    private void Submit()
+    {
+        errors.Clear();
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            errors["email"] = "Ingresá tu email.";
+        }
+        else if (!Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+        {
+            errors["email"] = "Ingresá un email válido, por ejemplo nombre@correo.com.";
+        }
+
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            errors["password"] = "Ingresá tu contraseña.";
+        }
+
+        if (errors.Count > 0)
+        {
+            notice = null;
+            return;
+        }
+
+        // Sin backend todavía: no se envían credenciales.
+        notice = "El inicio de sesión estará disponible cuando se conecte la API. " +
+                 "Por el momento no se enviaron tus datos.";
+    }
+
+    private void RecoverPassword()
+    {
+        notice = "La recuperación de contraseña estará disponible próximamente.";
+    }
+}

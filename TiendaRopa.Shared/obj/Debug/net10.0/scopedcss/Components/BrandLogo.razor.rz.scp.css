@@ -1,0 +1,51 @@
+.vr-brand[b-7umy9r3v4k] {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    color: inherit;
+}
+
+.vr-brand__mark[b-7umy9r3v4k] {
+    width: var(--vr-brand-mark, 40px);
+    height: var(--vr-brand-mark, 40px);
+    flex: none;
+    filter: drop-shadow(0 1px 2px rgba(43, 29, 47, 0.15));
+}
+
+.vr-brand__text[b-7umy9r3v4k] {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+}
+
+.vr-brand__name[b-7umy9r3v4k] {
+    font-family: var(--vr-font-display);
+    font-weight: 700;
+    font-size: var(--vr-brand-name, 1.2rem);
+    color: var(--vr-plum-strong);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+}
+
+.vr-brand__tag[b-7umy9r3v4k] {
+    font-family: var(--vr-font-body);
+    font-weight: 600;
+    font-size: var(--vr-brand-tag, 0.58rem);
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    color: var(--vr-plum-soft);
+    margin-top: 0.22rem;
+    text-indent: 0.42em; /* compensa el letter-spacing final para alinear a la izquierda */
+}
+
+.vr-brand--sm[b-7umy9r3v4k] {
+    --vr-brand-mark: 30px;
+    --vr-brand-name: 1rem;
+    --vr-brand-tag: 0.5rem;
+}
+
+.vr-brand--lg[b-7umy9r3v4k] {
+    --vr-brand-mark: 64px;
+    --vr-brand-name: 1.9rem;
+    --vr-brand-tag: 0.72rem;
+}

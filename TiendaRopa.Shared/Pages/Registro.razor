@@ -1,0 +1,122 @@
+@page "/registro"
+@using System.Text.RegularExpressions
+
+<PageTitle>Crear cuenta — Velvet Rose Boutique</PageTitle>
+
+@* Registro (mockup 02_registro.png). Sólo UI y validación en cliente:
+   no existe servicio de alta de usuarios hasta que haya API. *@
+
+<AuthPanel Title="Crear Cuenta"
+           Subtitle="Unite a Velvet Rose Boutique."
+           Notice="@notice"
+           OnSubmit="Submit">
+    <Fields>
+        <div class="auth-pair">
+            <FormField Label="Nombre"
+                       Placeholder="Tu nombre"
+                       AutoComplete="given-name"
+                       @bind-Value="firstName"
+                       Error="@GetError("firstName")" />
+            <FormField Label="Apellido"
+                       Placeholder="Tu apellido"
+                       AutoComplete="family-name"
+                       @bind-Value="lastName"
+                       Error="@GetError("lastName")" />
+        </div>
+
+        <FormField Label="Email"
+                   Type="email"
+                   Placeholder="tu@email.com"
+                   AutoComplete="email"
+                   @bind-Value="email"
+                   Error="@GetError("email")" />
+
+        <FormField Label="Contraseña"
+                   Type="password"
+                   Placeholder="Mínimo 6 caracteres"
+                   AutoComplete="new-password"
+                   Help="Usá al menos 6 caracteres."
+                   @bind-Value="password"
+                   Error="@GetError("password")" />
+
+        <div class="auth-terms">
+            <input type="checkbox" id="terms" @bind="acceptTerms" />
+            <label for="terms">Acepto los Términos y Condiciones</label>
+        </div>
+        @if (GetError("terms") is not null)
+        {
+            <small class="auth-terms-error" role="alert">@GetError("terms")</small>
+        }
+    </Fields>
+
+    <Actions>
+        <AppButton Variant="primary" FullWidth Icon="person_add" Type="submit">
+            Crear Cuenta
+        </AppButton>
+    </Actions>
+
+    <Footer>
+        ¿Ya tenés cuenta? <a href="/login" class="auth-link-inline">Iniciar sesión</a>
+    </Footer>
+</AuthPanel>
+
+@code {
+    private string? firstName;
+    private string? lastName;
+    private string? email;
+    private string? password;
+    private bool acceptTerms;
+    private string? notice;
+    private readonly Dictionary<string, string> errors = new();
+
+    private string? GetError(string field)
+        => errors.TryGetValue(field, out var message) ? message : null;
+
+    private void Submit()
+    {
+        errors.Clear();
+
+        if (string.IsNullOrWhiteSpace(firstName))
+        {
+            errors["firstName"] = "Ingresá tu nombre.";
+        }
+
+        if (string.IsNullOrWhiteSpace(lastName))
+        {
+            errors["lastName"] = "Ingresá tu apellido.";
+        }
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            errors["email"] = "Ingresá tu email.";
+        }
+        else if (!Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+        {
+            errors["email"] = "Ingresá un email válido, por ejemplo nombre@correo.com.";
+        }
+
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            errors["password"] = "Ingresá una contraseña.";
+        }
+        else if (password.Length < 6)
+        {
+            errors["password"] = "La contraseña debe tener al menos 6 caracteres.";
+        }
+
+        if (!acceptTerms)
+        {
+            errors["terms"] = "Debés aceptar los Términos y Condiciones para continuar.";
+        }
+
+        if (errors.Count > 0)
+        {
+            notice = null;
+            return;
+        }
+
+        // Sin backend todavía: no se envían datos personales.
+        notice = "El registro estará disponible cuando se conecte la API. " +
+                 "Por el momento no se enviaron tus datos.";
+    }
+}

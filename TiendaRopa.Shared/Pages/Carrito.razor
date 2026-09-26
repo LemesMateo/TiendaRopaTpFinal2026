@@ -1,0 +1,19 @@
+@page "/carrito"
+
+<PageTitle>Carrito — Velvet Rose Boutique</PageTitle>
+
+@* Carrito (mockup 06_carrito.png). Por ahora sólo el estado vacío:
+   no existe carrito real hasta que haya API y estado de sesión. *@
+
+<header class="page-head">
+    <h1>Carrito</h1>
+    <p class="page-sub">Revisá tus productos antes de continuar.</p>
+</header>
+
+<EmptyState Icon="shopping_cart"
+             Title="Tu carrito está vacío"
+             Description="Todavía no agregaste prendas. Explorá el catálogo y encontrá tus favoritas.">
+    <AppButton Variant="primary" Icon="storefront" Href="/catalogo">
+        Explorar catálogo
+    </AppButton>
+</EmptyState>

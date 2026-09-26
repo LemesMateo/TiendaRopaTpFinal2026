@@ -1,0 +1,182 @@
+/* Inicio cliente — mockup 03_inicio_cliente.png */
+
+.home-hero[b-gl5j5lffzn] {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--vr-space-4);
+    margin-bottom: var(--vr-space-5);
+}
+
+.home-hero h1[b-gl5j5lffzn] {
+    font-size: var(--vr-fs-3xl);
+    margin-bottom: var(--vr-space-1);
+}
+
+.home-hero__sub[b-gl5j5lffzn] {
+    margin: 0;
+    color: var(--vr-text-muted);
+    max-width: 30ch;
+}
+
+.home-hero__action[b-gl5j5lffzn] {
+    display: grid;
+    place-items: center;
+    width: var(--vr-tap-min);
+    height: var(--vr-tap-min);
+    flex: none;
+    border-radius: 50%;
+    background-color: var(--vr-surface);
+    border: 1px solid var(--vr-border);
+    color: var(--vr-primary);
+    box-shadow: var(--vr-shadow-sm);
+    text-decoration: none;
+    transition: border-color var(--vr-dur-fast) var(--vr-ease), background-color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.home-hero__action:hover[b-gl5j5lffzn] {
+    background-color: var(--vr-primary-soft);
+    border-color: var(--vr-primary);
+    color: var(--vr-primary);
+}
+
+.home-cats[b-gl5j5lffzn] {
+    margin-bottom: var(--vr-space-6);
+}
+
+/* Chips de categoría con enlace (misma estética que FilterChip) */
+.home-cat[b-gl5j5lffzn] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0.4rem 1.05rem;
+    border-radius: var(--vr-radius-pill);
+    border: 1.5px solid var(--vr-border-strong);
+    background-color: var(--vr-surface);
+    color: var(--vr-text);
+    font-size: var(--vr-fs-sm);
+    font-weight: 600;
+    white-space: nowrap;
+    flex: none;
+    text-decoration: none;
+    transition: background-color var(--vr-dur-fast) var(--vr-ease), border-color var(--vr-dur-fast) var(--vr-ease), color var(--vr-dur-fast) var(--vr-ease);
+}
+
+@media (pointer: coarse) {
+    .home-cat[b-gl5j5lffzn] {
+        min-height: var(--vr-tap-min);
+    }
+}
+
+.home-cat:hover[b-gl5j5lffzn] {
+    border-color: var(--vr-primary);
+    color: var(--vr-primary);
+    background-color: var(--vr-surface);
+}
+
+/* ---- Banner tipográfico (la foto de referencia requiere activos aptos) ---- */
+.home-banner[b-gl5j5lffzn] {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--vr-space-1);
+    padding: var(--vr-space-6) var(--vr-space-5);
+    margin-bottom: var(--vr-space-8);
+    border-radius: var(--vr-radius-xl);
+    border: 1px solid rgba(243, 166, 182, 0.55);
+    background: linear-gradient(135deg, #FDEFF2 0%, #F8E6EA 48%, #EFE6F5 100%);
+    box-shadow: var(--vr-shadow-sm);
+}
+
+.home-banner__content[b-gl5j5lffzn] {
+    position: relative;
+    z-index: 1;
+}
+
+.home-banner__eyebrow[b-gl5j5lffzn] {
+    margin: 0 0 var(--vr-space-2);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--vr-plum-soft);
+    /* Deja espacio a la insignia "HASTA 30% OFF" (esquina superior derecha) */
+    padding-right: 7.5rem;
+}
+
+.home-banner h2[b-gl5j5lffzn] {
+    margin-bottom: var(--vr-space-1);
+    font-size: var(--vr-fs-2xl);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--vr-plum-strong);
+}
+
+.home-banner__tag[b-gl5j5lffzn] {
+    margin: 0 0 var(--vr-space-4);
+    color: var(--vr-plum);
+    font-weight: 600;
+}
+
+.home-banner__cta[b-gl5j5lffzn] {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--vr-space-1);
+    min-height: var(--vr-tap-min);
+    font-weight: 700;
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-primary);
+    text-decoration: none;
+}
+
+.home-banner__cta:hover[b-gl5j5lffzn] {
+    color: var(--vr-primary-hover);
+    gap: var(--vr-space-2);
+}
+
+.home-banner__badge[b-gl5j5lffzn] {
+    position: absolute;
+    top: var(--vr-space-4);
+    right: var(--vr-space-4);
+    z-index: 1;
+    background-color: var(--vr-plum-soft);
+    color: var(--vr-primary-contrast);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 0.35rem 0.7rem;
+    border-radius: var(--vr-radius-pill);
+    box-shadow: var(--vr-shadow-sm);
+}
+
+.home-banner__rose[b-gl5j5lffzn] {
+    position: absolute;
+    right: -34px;
+    bottom: -40px;
+    color: rgba(197, 30, 58, 0.13);
+    pointer-events: none;
+    line-height: 0;
+}
+
+/* ---- Novedades ---- */
+.home-news[b-gl5j5lffzn] {
+    margin-bottom: var(--vr-space-4);
+}
+
+.home-note[b-gl5j5lffzn] {
+    display: flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    margin-top: var(--vr-space-5);
+    font-size: var(--vr-fs-xs);
+    color: var(--vr-text-subtle);
+}
+
+@media (min-width: 768px) {
+    .home-banner[b-gl5j5lffzn] {
+        padding: var(--vr-space-8) var(--vr-space-8);
+    }
+}

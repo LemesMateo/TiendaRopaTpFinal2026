@@ -1,0 +1,62 @@
+@* Icono basado en Google Material Symbols (fuente local en wwwroot/fonts).
+   Si Label se informa, el icono es accesible (role="img"); si no, se oculta
+   a lectores de pantalla porque suele ser decorativo. *@
+<span class="@CssClass" style="@Style" role="@Role" aria-label="@Label" aria-hidden="@AriaHidden">@Icon</span>
+
+@code {
+    /// <summary>Nombre del glifo (ligadura), por ejemplo "shopping_cart".</summary>
+    [Parameter, EditorRequired]
+    public string Icon { get; set; } = string.Empty;
+
+    /// <summary>Tamaño en píxeles.</summary>
+    [Parameter]
+    public int Size { get; set; } = 24;
+
+    /// <summary>Variante rellena (estado seleccionado).</summary>
+    [Parameter]
+    public bool Filled { get; set; }
+
+    /// <summary>Peso del glifo (100–900).</summary>
+    [Parameter]
+    public int Weight { get; set; } = 400;
+
+    /// <summary>Ajuste óptico del tamaño del glifo.</summary>
+    [Parameter]
+    public int OpticalSize { get; set; } = 24;
+
+    /// <summary>Color CSS del icono. Si no se informa, hereda el del contenedor.</summary>
+    [Parameter]
+    public string? Color { get; set; }
+
+    /// <summary>Clases CSS adicionales.</summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    /// <summary>Nombre accesible. Null = icono decorativo.</summary>
+    [Parameter]
+    public string? Label { get; set; }
+
+    private string? Role => Label is null ? null : "img";
+
+    private string? AriaHidden => Label is null ? "true" : null;
+
+    private string CssClass =>
+        $"material-symbols-outlined vr-icon {Class}".Trim();
+
+    private string Style
+    {
+        get
+        {
+            var fill = Filled ? 1 : 0;
+            var css = $"font-size:{Size}px;" +
+                      $"--vr-icon-variation:\"FILL\" {fill}, \"wght\" {Weight}, \"GRAD\" 0, \"opsz\" {OpticalSize};";
+
+            if (!string.IsNullOrWhiteSpace(Color))
+            {
+                css += $"color:{Color};";
+            }
+
+            return css;
+        }
+    }
+}

@@ -1,0 +1,84 @@
+.vr-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--vr-space-1);
+}
+
+.vr-field__label {
+    font-size: var(--vr-fs-sm);
+    font-weight: 600;
+    color: var(--vr-plum-strong);
+}
+
+.vr-field__control {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.vr-field__input {
+    width: 100%;
+    background-color: var(--vr-surface);
+    border: 1.5px solid var(--vr-border);
+    border-radius: var(--vr-radius-md);
+    padding: 0.7rem 0.95rem;
+    min-height: 48px;
+    font-size: var(--vr-fs-base);
+    color: var(--vr-text);
+    transition: border-color var(--vr-dur-fast) var(--vr-ease), box-shadow var(--vr-dur-fast) var(--vr-ease);
+}
+
+.vr-field__input::placeholder {
+    color: var(--vr-text-subtle);
+}
+
+.vr-field__input:focus {
+    outline: none;
+    border-color: var(--vr-plum-soft);
+    box-shadow: 0 0 0 3px rgba(113, 58, 125, 0.15);
+}
+
+.vr-field__reveal {
+    position: absolute;
+    right: 0.35rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-height: 40px;
+    padding-inline: 0.6rem;
+    border: 0;
+    border-radius: var(--vr-radius-sm);
+    background: transparent;
+    color: var(--vr-plum-soft);
+    font-size: var(--vr-fs-xs);
+    font-weight: 600;
+    transition: background-color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.vr-field__reveal:hover {
+    background-color: var(--vr-lavender);
+}
+
+/* Con botón de mostrar, el texto no debe quedar debajo */
+.vr-field__control:has(.vr-field__reveal) .vr-field__input {
+    padding-right: 5.5rem;
+}
+
+.vr-field--error .vr-field__input {
+    border-color: var(--vr-danger);
+}
+
+.vr-field--error .vr-field__input:focus {
+    box-shadow: 0 0 0 3px rgba(179, 23, 47, 0.15);
+}
+
+.vr-field__help {
+    color: var(--vr-text-muted);
+    font-size: 0.8rem;
+}
+
+.vr-field__error {
+    color: var(--vr-danger);
+    font-size: 0.8rem;
+    font-weight: 600;
+}

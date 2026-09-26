@@ -1,0 +1,104 @@
+is_global = true
+build_property.TargetFramework = net10.0
+build_property.TargetFrameworkIdentifier = .NETCoreApp
+build_property.TargetFrameworkVersion = v10.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = 
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = 
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property.EntryPointFilePath = 
+build_property._SupportedPlatformList = Linux,macOS,Windows,browser
+build_property.RootNamespace = TiendaRopa.Shared
+build_property.RootNamespace = TiendaRopa.Shared
+build_property.ProjectDir = C:\Users\mateo\source\repos\TiendaRopa\TiendaRopa.Shared\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.RazorLangVersion = 10.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = C:\Users\mateo\source\repos\TiendaRopa\TiendaRopa.Shared
+build_property._RazorSourceGeneratorDebug = 
+build_property.EffectiveAnalysisLevelStyle = 10.0
+build_property.EnableCodeStyleSeverity = 
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Components/AppIcon.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBcHBJY29uLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Pages/Carrito.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ2Fycml0by5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Pages/NotFound.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcTm90Rm91bmQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Routes.razor]
+build_metadata.AdditionalFiles.TargetPath = Um91dGVzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = X0ltcG9ydHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Components/AppButton.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBcHBCdXR0b24ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-njtt6on0tf
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Components/AuthPanel.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBdXRoUGFuZWwucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-m54yo7e2n7
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Components/BrandLogo.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xCcmFuZExvZ28ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-7umy9r3v4k
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Components/EmptyState.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xFbXB0eVN0YXRlLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-a45t6y1l4z
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Components/FilterChip.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xGaWx0ZXJDaGlwLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-nnck288rmy
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Components/FormField.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xGb3JtRmllbGQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-juru649so9
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Components/LoadingState.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMb2FkaW5nU3RhdGUucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-cilpgq87p5
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Components/ProductCard.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQcm9kdWN0Q2FyZC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-3kbcgfgqqr
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Components/SearchBar.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xTZWFyY2hCYXIucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-8tx8vixo3n
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Components/StatusBadge.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xTdGF0dXNCYWRnZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-5rwmf6ptf2
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Layout/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = TGF5b3V0XE1haW5MYXlvdXQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-1vpflo56hw
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Pages/Catalogo.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ2F0YWxvZ28ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-k6p92tgua0
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Pages/Home.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcSG9tZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-gl5j5lffzn
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Pages/Login.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcTG9naW4ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-w9f0xqym9u
+
+[C:/Users/mateo/source/repos/TiendaRopa/TiendaRopa.Shared/Pages/Registro.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUmVnaXN0cm8ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-lmlvbqgkzy

@@ -1,0 +1,72 @@
+﻿@page "/"
+@using TiendaRopa.Shared.Samples
+
+<PageTitle>Inicio — Velvet Rose Boutique</PageTitle>
+
+@* Inicio cliente (mockup 03_inicio_cliente.png) *@
+
+<section class="home-hero" aria-labelledby="home-greeting">
+    <div class="home-hero__text">
+        <h1 id="home-greeting">¡Hola, hermosa!</h1>
+        <p class="home-hero__sub">Descubrí piezas que realzan tu esencia.</p>
+    </div>
+    <a href="/catalogo" class="home-hero__action" aria-label="Buscar productos en el catálogo">
+        <AppIcon Icon="search" Size="24" />
+    </a>
+</section>
+
+<nav class="vr-chip-row home-cats" aria-label="Categorías destacadas">
+    @foreach (var cat in SampleCatalog.Categories)
+    {
+        <a class="vr-chip home-cat" href="@CategoryHref(cat)">@cat</a>
+    }
+</nav>
+
+<section class="home-banner" aria-labelledby="home-banner-title">
+    <div class="home-banner__content">
+        <p class="home-banner__eyebrow">Nueva Colección Primavera</p>
+        <h2 id="home-banner-title">Elegancia que florece</h2>
+        <p class="home-banner__tag">Tu estilo, tu poder.</p>
+        <a href="/catalogo" class="home-banner__cta">
+            Ver colección
+            <AppIcon Icon="arrow_forward" Size="18" />
+        </a>
+    </div>
+    <span class="home-banner__badge">HASTA 30% OFF</span>
+    <span class="home-banner__rose" aria-hidden="true">
+        <AppIcon Icon="local_florist" Size="170" Filled="true" />
+    </span>
+</section>
+
+<section class="home-news" aria-labelledby="home-news-title">
+    <div class="vr-section-head">
+        <h2 id="home-news-title">Novedades</h2>
+        <a href="/catalogo" class="vr-section-head__link">
+            Ver todas
+            <AppIcon Icon="chevron_right" Size="18" />
+        </a>
+    </div>
+
+    <div class="vr-product-grid">
+        @foreach (var product in SampleCatalog.Products.Take(4))
+        {
+            <ProductCard Name="@product.Name"
+                         Category="@product.Category"
+                         Price="@product.Price"
+                         OriginalPrice="@product.OriginalPrice"
+                         Badge="@product.Badge"
+                         BadgeTone="@product.BadgeTone"
+                         ImageUrl="@product.ImageUrl" />
+        }
+    </div>
+
+    <p class="home-note">
+        <AppIcon Icon="info" Size="16" />
+        Vista previa visual: los productos y precios son de ejemplo hasta conectar la API.
+    </p>
+</section>
+
+@code {
+    private static string CategoryHref(string category)
+        => $"/catalogo?cat={Uri.EscapeDataString(category)}";
+}

@@ -1,0 +1,107 @@
+@* Botón reutilizable. Si se informa Href, renderiza un enlace con
+   apariencia de botón (para navegación sin lógica de negocio). *@
+@if (!string.IsNullOrWhiteSpace(Href))
+{
+    <a href="@Href" class="@CssClass" @attributes="AdditionalAttributes">
+        @if (!string.IsNullOrWhiteSpace(Icon))
+        {
+            <AppIcon Icon="@Icon" Size="@IconSize" />
+        }
+        @if (ChildContent is not null)
+        {
+            <span class="vr-btn__label">@ChildContent</span>
+        }
+    </a>
+}
+else
+{
+    <button type="@Type"
+            class="@CssClass"
+            disabled="@Disabled"
+            @attributes="AdditionalAttributes"
+            @onclick="HandleClick">
+        @if (!string.IsNullOrWhiteSpace(Icon))
+        {
+            <AppIcon Icon="@Icon" Size="@IconSize" />
+        }
+        @if (ChildContent is not null)
+        {
+            <span class="vr-btn__label">@ChildContent</span>
+        }
+    </button>
+}
+
+@code {
+    /// <summary>Variante visual: primary | outline | ghost.</summary>
+    [Parameter]
+    public string Variant { get; set; } = "primary";
+
+    /// <summary>Tamaño: md (por defecto) | sm.</summary>
+    [Parameter]
+    public string Size { get; set; } = "md";
+
+    /// <summary>Ocupa todo el ancho disponible.</summary>
+    [Parameter]
+    public bool FullWidth { get; set; }
+
+    /// <summary>Icono Material Symbols previo al texto.</summary>
+    [Parameter]
+    public string? Icon { get; set; }
+
+    /// <summary>Tamaño del icono.</summary>
+    [Parameter]
+    public int IconSize { get; set; } = 20;
+
+    /// <summary>Tipo HTML del botón.</summary>
+    [Parameter]
+    public string Type { get; set; } = "button";
+
+    /// <summary>Si se informa, el componente renderiza un enlace de navegación.</summary>
+    [Parameter]
+    public string? Href { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter]
+    public EventCallback OnClick { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Clase CSS adicional.</summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string CssClass
+    {
+        get
+        {
+            var classes = $"vr-btn vr-btn--{Variant} vr-btn--{Size}";
+            if (FullWidth)
+            {
+                classes += " vr-btn--block";
+            }
+
+            if (!string.IsNullOrWhiteSpace(Class))
+            {
+                classes += $" {Class}";
+            }
+
+            return classes;
+        }
+    }
+
+    private async Task HandleClick(MouseEventArgs _)
+    {
+        if (Disabled)
+        {
+            return;
+        }
+
+        await OnClick.InvokeAsync();
+    }
+}

@@ -1,0 +1,198 @@
+@page "/catalogo"
+@using TiendaRopa.Shared.Models
+@using TiendaRopa.Shared.Samples
+
+<PageTitle>Catálogo — Velvet Rose Boutique</PageTitle>
+
+@* Catálogo con búsqueda y filtros (mockup 04_catalogo_filtros.png).
+   Filtrado local sobre datos de muestra: sin llamadas a servicios. *@
+
+<header class="cat-head">
+    <h1>Catálogo</h1>
+</header>
+
+<SearchBar @bind-Value="query"
+           Placeholder="Buscar productos..."
+           Label="Buscar productos por nombre o categoría" />
+
+<nav class="vr-chip-row cat-cats" aria-label="Filtrar por categoría">
+    <FilterChip Text="Todas"
+                Selected="@(category is null)"
+                OnSelected="@(() => SetCategory(null))" />
+    @foreach (var cat in SampleCatalog.Categories)
+    {
+        <FilterChip Text="@cat"
+                    Selected="@(category == cat)"
+                    OnSelected="@(() => SetCategory(cat))" />
+    }
+</nav>
+
+<div class="cat-filters">
+    <label class="cat-select">
+        <span class="cat-select__text">
+            <AppIcon Icon="straighten" Size="18" />
+            Talle
+        </span>
+        <select @bind="size" aria-label="Filtrar por talle">
+            <option value="">Todos</option>
+            @foreach (var s in SampleCatalog.Sizes)
+            {
+                <option value="@s">@s</option>
+            }
+        </select>
+        <AppIcon Icon="expand_more" Size="18" Class="cat-select__chevron" />
+    </label>
+
+    <label class="cat-select">
+        <span class="cat-select__text">
+            <AppIcon Icon="palette" Size="18" />
+            Color
+        </span>
+        <select @bind="color" aria-label="Filtrar por color">
+            <option value="">Todos</option>
+            @foreach (var c in SampleCatalog.Colors)
+            {
+                <option value="@c">@c</option>
+            }
+        </select>
+        <AppIcon Icon="expand_more" Size="18" Class="cat-select__chevron" />
+    </label>
+
+    <label class="cat-select">
+        <span class="cat-select__text">
+            <AppIcon Icon="sell" Size="18" />
+            Precio
+        </span>
+        <select @bind="priceBand" aria-label="Filtrar por rango de precio">
+            <option value="">Todos</option>
+            <option value="upto30">Hasta $30.000</option>
+            <option value="30to60">$30.000 – $60.000</option>
+            <option value="over60">Más de $60.000</option>
+        </select>
+        <AppIcon Icon="expand_more" Size="18" Class="cat-select__chevron" />
+    </label>
+</div>
+
+<div class="cat-toolbar">
+    <p class="cat-count" role="status">
+        @Filtered.Count @(Filtered.Count == 1 ? "producto" : "productos")
+    </p>
+    <label class="cat-sort">
+        <span class="cat-sort__label">Ordenar</span>
+        <select @bind="sort" aria-label="Ordenar resultados">
+            <option value="relevancia">Relevancia</option>
+            <option value="precio-asc">Precio: menor a mayor</option>
+            <option value="precio-desc">Precio: mayor a menor</option>
+            <option value="nombre">Nombre (A–Z)</option>
+        </select>
+        <AppIcon Icon="expand_more" Size="18" Class="cat-select__chevron" />
+    </label>
+</div>
+
+@if (Filtered.Count == 0)
+{
+    <EmptyState Icon="search_off"
+                 Title="Sin resultados"
+                 Description="No encontramos prendas con esos filtros. Probá con otros términos o limpiá la búsqueda.">
+        <AppButton Variant="outline" Icon="filter_alt_off" OnClick="ClearFilters">
+            Limpiar filtros
+        </AppButton>
+    </EmptyState>
+}
+else
+{
+    <div class="vr-product-grid cat-grid">
+        @foreach (var product in Filtered)
+        {
+            <ProductCard Name="@product.Name"
+                         Category="@product.Category"
+                         Price="@product.Price"
+                         OriginalPrice="@product.OriginalPrice"
+                         Badge="@product.Badge"
+                         BadgeTone="@product.BadgeTone"
+                         ImageUrl="@product.ImageUrl" />
+        }
+    </div>
+}
+
+@code {
+    private string? query;
+    private string? category;
+    private string size = string.Empty;
+    private string color = string.Empty;
+    private string priceBand = string.Empty;
+    private string sort = "relevancia";
+
+    /// <summary>Categoría precargada desde el enlace de Inicio (?cat=...).</summary>
+    [SupplyParameterFromQuery(Name = "cat")]
+    public string? CategoryQuery { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (!string.IsNullOrWhiteSpace(CategoryQuery))
+        {
+            category = SampleCatalog.Categories
+                .FirstOrDefault(c => string.Equals(c, CategoryQuery, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    private List<ProductCardItem> Filtered
+    {
+        get
+        {
+            var result = SampleCatalog.Products.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                result = result.Where(p =>
+                    p.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                    p.Category.Contains(query, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(category))
+            {
+                result = result.Where(p => p.Category == category);
+            }
+
+            if (!string.IsNullOrWhiteSpace(size))
+            {
+                result = result.Where(p => p.Sizes.Contains(size));
+            }
+
+            if (!string.IsNullOrWhiteSpace(color))
+            {
+                result = result.Where(p => p.Colors.Contains(color));
+            }
+
+            result = priceBand switch
+            {
+                "upto30" => result.Where(p => p.SortPrice <= 30_000),
+                "30to60" => result.Where(p => p.SortPrice > 30_000 && p.SortPrice <= 60_000),
+                "over60" => result.Where(p => p.SortPrice > 60_000),
+                _ => result,
+            };
+
+            IEnumerable<ProductCardItem> ordered = sort switch
+            {
+                "precio-asc" => result.OrderBy(p => p.SortPrice),
+                "precio-desc" => result.OrderByDescending(p => p.SortPrice),
+                "nombre" => result.OrderBy(p => p.Name, StringComparer.CurrentCulture),
+                _ => result,
+            };
+
+            return ordered.ToList();
+        }
+    }
+
+    private void SetCategory(string? value) => category = value;
+
+    private void ClearFilters()
+    {
+        query = null;
+        category = null;
+        size = string.Empty;
+        color = string.Empty;
+        priceBand = string.Empty;
+        sort = "relevancia";
+    }
+}
