@@ -161,6 +161,30 @@
     color: var(--vr-primary);
 }
 
+/* Botón "Cerrar sesión" (mismo aspecto que los enlaces de la lista) */
+.app-navlist__logout {
+    display: flex;
+    align-items: center;
+    gap: var(--vr-space-3);
+    width: 100%;
+    min-height: 48px;
+    padding: 0.6rem 0.85rem;
+    border: 0;
+    border-radius: var(--vr-radius-md);
+    background: transparent;
+    color: var(--vr-text);
+    font: inherit;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--vr-dur-fast) var(--vr-ease), color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.app-navlist__logout:hover {
+    background-color: var(--vr-danger-bg);
+    color: var(--vr-danger);
+}
+
 /* ---- Contenido ---- */
 .app-main {
     display: block;

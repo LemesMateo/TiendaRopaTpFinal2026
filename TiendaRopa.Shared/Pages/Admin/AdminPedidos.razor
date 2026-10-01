@@ -1,0 +1,273 @@
+@page "/admin/pedidos"
+@using TiendaRopa.Contracts.Admin
+@using TiendaRopa.Shared.Services
+@inject IAdminService AdminApi
+@inject SesionService Sesion
+@implements IDisposable
+
+<PageTitle>Pedidos — Administración — Velvet Rose Boutique</PageTitle>
+
+@* Listado y cambio de estado de pedidos (mockup 08).
+   Las transiciones válidas las define el backend; acá sólo se ofrecen las
+   que el API reporta como permitidas para el estado actual. *@
+
+@if (!sesionCargada)
+{
+    <LoadingState Text="Verificando tu sesión..." />
+}
+else if (!Sesion.EsAdministrador)
+{
+    <EmptyState Icon="admin_panel_settings"
+                 Title="Sección restringida"
+                 Description="Necesitás iniciar sesión con una cuenta administradora.">
+        <AppButton Variant="primary" Icon="login" Href="/login?redirect=/admin/pedidos">
+            Iniciar sesión
+        </AppButton>
+    </EmptyState>
+}
+else
+{
+    <header class="admin-head">
+        <div>
+            <h1>Pedidos</h1>
+            <p class="page-sub">Estados, detalle y transiciones del flujo de compras.</p>
+        </div>
+    </header>
+
+    <div class="admin-toolbar">
+        <label class="admin-filter">
+            <span>Estado</span>
+            <select @bind="filtroEstado" @bind:after="CargarAsync">
+                <option value="">Todos</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Confirmado">Confirmado</option>
+                <option value="Preparado">Preparado</option>
+                <option value="Entregado">Entregado</option>
+                <option value="Cancelado">Cancelado</option>
+            </select>
+        </label>
+    </div>
+
+    @if (mensaje is not null)
+    {
+        <p class="admin-notice @(esError ? "is-error" : "")" role="alert">@mensaje</p>
+    }
+
+    @if (cargando)
+    {
+        <LoadingState Text="Cargando pedidos..." />
+    }
+    else if (pedidos.Count == 0)
+    {
+        <EmptyState Icon="receipt_long"
+                    Title="Sin pedidos"
+                    Description="No hay pedidos con ese estado." />
+    }
+    else
+    {
+        <ul class="admin-list" style="gap: var(--vr-space-4)">
+            @foreach (var pedido in pedidos)
+            {
+                <li class="admin-pedido">
+                    <div class="admin-pedido__head">
+                        <div>
+                            <p class="admin-pedido__id">Pedido #@pedido.Id</p>
+                            <p class="admin-pedido__meta">
+                                @pedido.FechaPedido.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ·
+                                @pedido.Cliente @(pedido.Email is null ? "" : $"({pedido.Email})") ·
+                                @pedido.CantidadItems @(pedido.CantidadItems == 1 ? "ítem" : "ítems")
+                            </p>
+                        </div>
+
+                        <div class="admin-pedido__estado">
+                            <StatusBadge Text="@pedido.Estado" Tone="@TonoEstado(pedido.Estado)" />
+                            @if (pedido.TransicionesPermitidas.Count > 0)
+                            {
+                                <select aria-label="@($"Cambiar estado del pedido {pedido.Id}")"
+                                        @bind="estadoSeleccionado[pedido.Id]">
+                                    <option value="">Cambiar estado…</option>
+                                    @foreach (var siguiente in pedido.TransicionesPermitidas)
+                                    {
+                                        <option value="@siguiente">@siguiente</option>
+                                    }
+                                </select>
+                                <AppButton Variant="outline"
+                                           Size="sm"
+                                           Icon="swap_horiz"
+                                           Disabled="!(estadoSeleccionado.TryGetValue(pedido.Id, out var sel) && !string.IsNullOrEmpty(sel)) || cambiandoId == pedido.Id"
+                                           OnClick="(() => CambiarEstadoAsync(pedido.Id))">
+                                    @(cambiandoId == pedido.Id ? "Aplicando…" : "Aplicar")
+                                </AppButton>
+                            }
+                            else
+                            {
+                                <span class="admin-pedido__meta">Sin transiciones disponibles</span>
+                            }
+                        </div>
+                    </div>
+
+                    @if (detalleId == pedido.Id && detalle is not null)
+                    {
+                        <ul class="admin-pedido__detalle">
+                            @foreach (var linea in detalle.Detalles)
+                            {
+                                <li>
+                                    <span>
+                                        <strong>@linea.Producto</strong>
+                                        · talle @linea.Talle · color @linea.Color · ×@linea.Cantidad
+                                    </span>
+                                    <span>@Services.CatalogoPresentation.FormatearPrecio(linea.Subtotal)</span>
+                                </li>
+                            }
+                        </ul>
+                        <p class="admin-pedido__total">
+                            <span>Total</span>
+                            <span>@Services.CatalogoPresentation.FormatearPrecio(detalle.Total)</span>
+                        </p>
+                    }
+                    else
+                    {
+                        <AppButton Variant="ghost" Size="sm" Icon="expand_more"
+                                   OnClick="(() => VerDetalleAsync(pedido.Id))">
+                            Ver detalle
+                        </AppButton>
+                    }
+                </li>
+            }
+        </ul>
+    }
+}
+
+@code {
+    private bool sesionCargada;
+    private bool cargando = true;
+    private string? mensaje;
+    private bool esError;
+    private string filtroEstado = "";
+
+    private List<PedidoAdminDto> pedidos = [];
+    private readonly Dictionary<int, string> estadoSeleccionado = [];
+    private int? cambiandoId;
+    private int? detalleId;
+    private TiendaRopa.Contracts.Pedidos.PedidoDto? detalle;
+
+    protected override void OnInitialized() => Sesion.Cambio += OnSesionCambiada;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!sesionCargada)
+        {
+            await Sesion.CargarAsync();
+            sesionCargada = true;
+            StateHasChanged();
+
+            if (Sesion.EsAdministrador)
+            {
+                await CargarAsync();
+            }
+        }
+    }
+
+    private void OnSesionCambiada() => InvokeAsync(StateHasChanged);
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        StateHasChanged();
+
+        try
+        {
+            var resultado = await AdminApi.GetPedidosAsync(
+                string.IsNullOrEmpty(filtroEstado) ? null : filtroEstado, 1, 50);
+            pedidos = resultado.Items.ToList();
+
+            // @bind sobre el índice del diccionario exige que la clave exista:
+            // si no, el render lanza KeyNotFoundException.
+            foreach (var pedido in pedidos)
+            {
+                estadoSeleccionado.TryAdd(pedido.Id, string.Empty);
+            }
+
+            mensaje = null;
+        }
+        catch (Exception)
+        {
+            pedidos = [];
+            mensaje = "No pudimos conectar con la tienda.";
+            esError = true;
+        }
+        finally
+        {
+            cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task VerDetalleAsync(int id)
+    {
+        try
+        {
+            detalle = await AdminApi.GetPedidoAsync(id);
+            detalleId = detalle is null ? null : id;
+        }
+        catch (Exception)
+        {
+            detalleId = null;
+        }
+    }
+
+    private async Task CambiarEstadoAsync(int id)
+    {
+        if (!estadoSeleccionado.TryGetValue(id, out var destino) || string.IsNullOrEmpty(destino))
+        {
+            return;
+        }
+
+        cambiandoId = id;
+        StateHasChanged();
+
+        try
+        {
+            var pedido = await AdminApi.CambiarEstadoPedidoAsync(
+                id, new CambiarEstadoPedidoRequest { Estado = destino });
+
+            if (pedido is null)
+            {
+                mensaje = AdminApi.UltimoError ?? "La transición no está permitida.";
+                esError = true;
+            }
+            else
+            {
+                mensaje = $"Pedido #{id}: estado ahora es \"{pedido.Estado}\".";
+                esError = false;
+                estadoSeleccionado.Remove(id);
+                detalleId = null;
+                detalle = null;
+            }
+
+            await CargarAsync();
+        }
+        catch (Exception)
+        {
+            mensaje = "No pudimos conectar con la tienda.";
+            esError = true;
+        }
+        finally
+        {
+            cambiandoId = null;
+            StateHasChanged();
+        }
+    }
+
+    private static string TonoEstado(string estado) => estado switch
+    {
+        "Pendiente" => "warning",
+        "Confirmado" => "info",
+        "Preparado" => "primary",
+        "Entregado" => "success",
+        "Cancelado" => "danger",
+        _ => "neutral",
+    };
+
+    public void Dispose() => Sesion.Cambio -= OnSesionCambiada;
+}

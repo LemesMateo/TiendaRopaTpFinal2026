@@ -1,10 +1,14 @@
 @page "/login"
 @using System.Text.RegularExpressions
+@using TiendaRopa.Contracts.Identidad
+@using TiendaRopa.Shared.Services
+@inject IAuthService AuthApi
+@inject SesionService Sesion
+@inject NavigationManager Navigation
 
 <PageTitle>Iniciar sesión — Velvet Rose Boutique</PageTitle>
 
-@* Login (mockup 01_login.png). Sólo UI y validación en cliente:
-   no existe servicio de autenticación hasta que haya API. *@
+@* Login (mockup 01_login.png) conectado a la API con JWT. *@
 
 <AuthPanel Title="Iniciar Sesión"
            Subtitle="Accedé para seguir tus compras."
@@ -33,8 +37,8 @@
     </Fields>
 
     <Actions>
-        <AppButton Variant="primary" FullWidth Icon="login" Type="submit">
-            Iniciar Sesión
+        <AppButton Variant="primary" FullWidth Icon="login" Type="submit" Disabled="enviando">
+            @(enviando ? "Ingresando…" : "Iniciar Sesión")
         </AppButton>
     </Actions>
 
@@ -47,14 +51,29 @@
     private string? email;
     private string? password;
     private string? notice;
+    private bool enviando;
     private readonly Dictionary<string, string> errors = new();
+
+    /// <summary>A dónde volver después del login (por ejemplo /carrito).</summary>
+    [SupplyParameterFromQuery(Name = "redirect")]
+    public string? Redirect { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Sesion.CargarAsync();
+        if (Sesion.Iniciada)
+        {
+            NavegarTrasLogin();
+        }
+    }
 
     private string? GetError(string field)
         => errors.TryGetValue(field, out var message) ? message : null;
 
-    private void Submit()
+    private async Task Submit()
     {
         errors.Clear();
+        notice = null;
 
         if (string.IsNullOrWhiteSpace(email))
         {
@@ -72,13 +91,47 @@
 
         if (errors.Count > 0)
         {
-            notice = null;
             return;
         }
 
-        // Sin backend todavía: no se envían credenciales.
-        notice = "El inicio de sesión estará disponible cuando se conecte la API. " +
-                 "Por el momento no se enviaron tus datos.";
+        enviando = true;
+        StateHasChanged();
+
+        try
+        {
+            var sesion = await AuthApi.LoginAsync(new LoginRequest
+            {
+                Email = email!.Trim(),
+                Password = password!,
+            });
+
+            if (sesion is null)
+            {
+                notice = (AuthApi as HttpAuthService)?.UltimoError
+                    ?? "Email o contraseña incorrectos.";
+                return;
+            }
+
+            NavegarTrasLogin(sesion.Usuario.Rol);
+        }
+        catch (Exception)
+        {
+            notice = "No pudimos conectar con la tienda. Intentá nuevamente en unos segundos.";
+        }
+        finally
+        {
+            enviando = false;
+        }
+    }
+
+    private void NavegarTrasLogin(string? rol = null)
+    {
+        // Sólo rutas internas: evita redireccionar a sitios externos.
+        var destino = !string.IsNullOrWhiteSpace(Redirect) && Redirect.StartsWith('/')
+            ? Redirect
+            : (rol == "Administrador" ? "/admin" : "/");
+
+        Navigation.NavigateTo(destino);
     }
 
     private void RecoverPassword()

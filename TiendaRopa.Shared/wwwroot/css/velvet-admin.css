@@ -1,0 +1,438 @@
+/* ============================================================
+   Velvet Rose Boutique — estilos del panel administrativo
+   Compartido por /admin, /admin/productos, /admin/pedidos y
+   /admin/catalogos (se enlaza desde Web App.razor y MAUI index.html).
+   ============================================================ */
+
+.admin-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--vr-space-4);
+    flex-wrap: wrap;
+    margin-bottom: var(--vr-space-5);
+}
+
+.admin-head h1 {
+    margin-bottom: var(--vr-space-2);
+}
+
+.admin-toolbar {
+    display: grid;
+    gap: var(--vr-space-3);
+    margin-bottom: var(--vr-space-4);
+    align-items: center;
+}
+
+@media (min-width: 768px) {
+    .admin-toolbar {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+}
+
+.admin-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text-muted);
+    font-weight: 600;
+}
+
+.admin-filter select {
+    min-height: var(--vr-tap-min);
+    padding: 0 var(--vr-space-3);
+    border: 1px solid var(--vr-border-strong);
+    border-radius: var(--vr-radius-sm);
+    background: var(--vr-surface);
+    font: inherit;
+    color: var(--vr-text);
+}
+
+.admin-notice {
+    margin: 0 0 var(--vr-space-4);
+    padding: var(--vr-space-3) var(--vr-space-4);
+    background: var(--vr-success-bg);
+    color: var(--vr-success);
+    border-radius: var(--vr-radius-sm);
+    font-size: var(--vr-fs-sm);
+}
+
+.admin-notice.is-error {
+    background: var(--vr-danger-bg);
+    color: var(--vr-danger);
+}
+
+/* ---- Formularios ---- */
+.admin-form {
+    background: var(--vr-surface);
+    border: 1px solid var(--vr-border);
+    border-radius: var(--vr-radius-md);
+    box-shadow: var(--vr-shadow-md);
+    padding: var(--vr-space-5);
+    margin-bottom: var(--vr-space-6);
+    display: grid;
+    gap: var(--vr-space-4);
+}
+
+.admin-form h2 {
+    margin: 0;
+    font-family: var(--vr-font-display);
+    font-size: var(--vr-fs-lg);
+    color: var(--vr-plum-strong);
+}
+
+.admin-form h3 {
+    margin: 0 0 var(--vr-space-3);
+    font-size: var(--vr-fs-md);
+    color: var(--vr-plum-strong);
+}
+
+.admin-form__grid {
+    display: grid;
+    gap: var(--vr-space-4);
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.admin-field {
+    display: grid;
+    gap: var(--vr-space-1);
+    font-size: var(--vr-fs-sm);
+    font-weight: 600;
+    color: var(--vr-text);
+}
+
+.admin-field--wide {
+    grid-column: 1 / -1;
+}
+
+.admin-field input,
+.admin-field select,
+.admin-field textarea {
+    min-height: var(--vr-tap-min);
+    padding: var(--vr-space-2) var(--vr-space-3);
+    border: 1px solid var(--vr-border-strong);
+    border-radius: var(--vr-radius-sm);
+    background: var(--vr-surface);
+    font: inherit;
+    font-weight: 400;
+    color: var(--vr-text);
+}
+
+.admin-field textarea {
+    min-height: 84px;
+    resize: vertical;
+    line-height: var(--vr-lh-body);
+}
+
+.admin-field input:focus-visible,
+.admin-field select:focus-visible,
+.admin-field textarea:focus-visible {
+    outline: 2px solid var(--vr-focus);
+    outline-offset: 1px;
+}
+
+.admin-check {
+    display: flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text);
+    grid-column: 1 / -1;
+}
+
+.admin-check input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--vr-primary);
+}
+
+.admin-form__actions {
+    display: flex;
+    gap: var(--vr-space-3);
+    flex-wrap: wrap;
+}
+
+/* ---- Variantes ---- */
+.admin-variants {
+    border-top: 1px dashed var(--vr-border-strong);
+    padding-top: var(--vr-space-4);
+    display: grid;
+    gap: var(--vr-space-3);
+    justify-items: start;
+}
+
+.admin-variants__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    display: grid;
+    gap: var(--vr-space-2);
+}
+
+.admin-variants__list li {
+    display: flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    flex-wrap: wrap;
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text);
+    background: var(--vr-surface-soft);
+    border: 1px solid var(--vr-border);
+    border-radius: var(--vr-radius-sm);
+    padding: var(--vr-space-2) var(--vr-space-3);
+}
+
+.admin-variants__swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--swatch, #CBD5CF);
+    border: 1px solid rgba(43, 29, 47, 0.2);
+    flex: 0 0 auto;
+}
+
+.admin-variants__stock {
+    margin-left: auto;
+    padding: 2px var(--vr-space-2);
+    border-radius: var(--vr-radius-pill);
+    background: var(--vr-success-bg);
+    color: var(--vr-success);
+    font-size: var(--vr-fs-xs);
+    font-weight: 700;
+}
+
+.admin-variants__stock.is-low {
+    background: var(--vr-warning-bg);
+    color: var(--vr-warning);
+}
+
+.admin-variants__stock.is-empty {
+    background: var(--vr-danger-bg);
+    color: var(--vr-danger);
+}
+
+.admin-variants__price {
+    font-size: var(--vr-fs-xs);
+    color: var(--vr-text-muted);
+}
+
+.admin-variants__empty {
+    margin: 0;
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text-muted);
+}
+
+.admin-variants__form {
+    width: 100%;
+}
+
+/* ---- Listas ---- */
+.admin-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--vr-space-3);
+}
+
+.admin-list__item {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: var(--vr-space-3);
+    align-items: center;
+    background: var(--vr-surface);
+    border: 1px solid var(--vr-border);
+    border-radius: var(--vr-radius-md);
+    padding: var(--vr-space-3) var(--vr-space-4);
+    box-shadow: var(--vr-shadow-sm);
+}
+
+.admin-list__item.is-inactive {
+    opacity: 0.62;
+    background: var(--vr-surface-soft);
+}
+
+@media (min-width: 768px) {
+    .admin-list__item {
+        grid-template-columns: 56px minmax(0, 1fr) auto auto;
+    }
+}
+
+.admin-list__media {
+    width: 56px;
+    height: 68px;
+    border-radius: var(--vr-radius-sm);
+    overflow: hidden;
+    background: var(--vr-surface-tint);
+}
+
+.admin-list__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.admin-list__placeholder {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    color: var(--vr-rose);
+}
+
+.admin-list__body {
+    min-width: 0;
+}
+
+.admin-list__name {
+    margin: 0;
+    font-weight: 600;
+    color: var(--vr-plum-strong);
+}
+
+.admin-list__meta {
+    margin: 2px 0 0;
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text-muted);
+}
+
+.admin-list__actions {
+    display: flex;
+    gap: var(--vr-space-2);
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+@media (min-width: 768px) {
+    .admin-list__actions {
+        grid-column: auto;
+    }
+}
+
+/* ---- Tablas simples (catálogos / pedidos) ---- */
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--vr-surface);
+    border: 1px solid var(--vr-border);
+    border-radius: var(--vr-radius-md);
+    overflow: hidden;
+    font-size: var(--vr-fs-sm);
+}
+
+.admin-table th,
+.admin-table td {
+    padding: var(--vr-space-3);
+    text-align: left;
+    border-bottom: 1px solid var(--vr-border);
+    color: var(--vr-text);
+}
+
+.admin-table th {
+    background: var(--vr-surface-soft);
+    font-size: var(--vr-fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--vr-text-muted);
+}
+
+.admin-table tr:last-child td {
+    border-bottom: 0;
+}
+
+.admin-table td.admin-td-actions {
+    display: flex;
+    gap: var(--vr-space-2);
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+/* ---- Catálogos (3 columnas) ---- */
+.admin-catalogs {
+    display: grid;
+    gap: var(--vr-space-5);
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    align-items: start;
+}
+
+/* ---- Pedidos admin ---- */
+.admin-pedido {
+    background: var(--vr-surface);
+    border: 1px solid var(--vr-border);
+    border-radius: var(--vr-radius-md);
+    padding: var(--vr-space-4);
+    display: grid;
+    gap: var(--vr-space-3);
+    box-shadow: var(--vr-shadow-sm);
+}
+
+.admin-pedido__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--vr-space-3);
+    flex-wrap: wrap;
+}
+
+.admin-pedido__id {
+    margin: 0;
+    font-weight: 700;
+    color: var(--vr-plum-strong);
+}
+
+.admin-pedido__meta {
+    margin: 2px 0 0;
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text-muted);
+}
+
+.admin-pedido__estado {
+    display: flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    flex-wrap: wrap;
+}
+
+.admin-pedido__estado select {
+    min-height: var(--vr-tap-min);
+    padding: 0 var(--vr-space-3);
+    border: 1px solid var(--vr-border-strong);
+    border-radius: var(--vr-radius-pill);
+    background: var(--vr-surface);
+    font: inherit;
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text);
+}
+
+.admin-pedido__detalle {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--vr-space-1);
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text-muted);
+}
+
+.admin-pedido__detalle li {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--vr-space-3);
+}
+
+.admin-pedido__detalle strong {
+    color: var(--vr-text);
+    font-weight: 600;
+}
+
+.admin-pedido__total {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px dashed var(--vr-border-strong);
+    padding-top: var(--vr-space-2);
+    font-weight: 700;
+    color: var(--vr-plum);
+}

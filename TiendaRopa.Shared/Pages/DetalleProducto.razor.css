@@ -1,0 +1,289 @@
+/* Detalle de producto (mockup 05) — mobile-first con tokens Velvet Rose. */
+
+.det-breadcrumb {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--vr-space-1);
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text-muted);
+    margin-bottom: var(--vr-space-5);
+}
+
+.det-breadcrumb a {
+    color: var(--vr-text-muted);
+    text-decoration: none;
+}
+
+.det-breadcrumb a:hover,
+.det-breadcrumb a:focus-visible {
+    color: var(--vr-primary);
+    text-decoration: underline;
+}
+
+.det-breadcrumb span {
+    color: var(--vr-text);
+    font-weight: 600;
+    max-width: 45vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ---- Layout ---- */
+.det-layout {
+    display: grid;
+    gap: var(--vr-space-6);
+}
+
+@media (min-width: 900px) {
+    .det-layout {
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+        gap: var(--vr-space-8);
+        align-items: start;
+    }
+}
+
+/* ---- Galería ---- */
+.det-gallery__main {
+    background: var(--vr-surface);
+    border: 1px solid var(--vr-border);
+    border-radius: var(--vr-radius-lg);
+    overflow: hidden;
+    aspect-ratio: 4 / 5;
+    display: grid;
+    place-items: center;
+}
+
+.det-gallery__main img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.det-gallery__placeholder {
+    display: grid;
+    place-items: center;
+    gap: var(--vr-space-2);
+    width: 100%;
+    height: 100%;
+    color: var(--vr-rose);
+    background:
+        radial-gradient(circle at 30% 20%, var(--vr-rose-50), transparent 60%),
+        linear-gradient(160deg, var(--vr-surface-tint), var(--vr-surface));
+}
+
+.det-gallery__thumbs {
+    display: flex;
+    gap: var(--vr-space-2);
+    margin-top: var(--vr-space-3);
+    overflow-x: auto;
+    padding-bottom: var(--vr-space-1);
+}
+
+.det-gallery__thumb {
+    flex: 0 0 68px;
+    height: 68px;
+    padding: 0;
+    border: 2px solid var(--vr-border);
+    border-radius: var(--vr-radius-sm);
+    overflow: hidden;
+    background: var(--vr-surface);
+    cursor: pointer;
+}
+
+.det-gallery__thumb.is-active {
+    border-color: var(--vr-primary);
+}
+
+.det-gallery__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* ---- Información ---- */
+.det-info {
+    display: grid;
+    gap: var(--vr-space-4);
+}
+
+.det-info__category {
+    margin: 0;
+    font-size: var(--vr-fs-sm);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--vr-plum-soft);
+    font-weight: 600;
+}
+
+.det-info__name {
+    margin: 0;
+    font-family: var(--vr-font-display);
+    font-size: var(--vr-fs-2xl);
+    line-height: var(--vr-lh-tight);
+    color: var(--vr-plum-strong);
+}
+
+.det-info__price {
+    margin: 0;
+    display: flex;
+    align-items: baseline;
+    gap: var(--vr-space-3);
+    flex-wrap: wrap;
+}
+
+.det-info__price-now {
+    font-size: var(--vr-fs-xl);
+    font-weight: 700;
+    color: var(--vr-plum);
+}
+
+.det-info__price-note {
+    font-size: var(--vr-fs-xs);
+    color: var(--vr-text-subtle);
+}
+
+.det-info__desc {
+    margin: 0;
+    color: var(--vr-text-muted);
+    line-height: var(--vr-lh-body);
+}
+
+.det-info__stock {
+    margin: 0;
+}
+
+.det-info__notice {
+    margin: 0;
+    padding: var(--vr-space-3) var(--vr-space-4);
+    background: var(--vr-success-bg);
+    color: var(--vr-success);
+    border-radius: var(--vr-radius-sm);
+    font-size: var(--vr-fs-sm);
+    line-height: var(--vr-lh-snug);
+}
+
+/* ---- Grupos talle/color ---- */
+.det-group {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: var(--vr-space-2);
+}
+
+.det-group__legend {
+    font-size: var(--vr-fs-sm);
+    font-weight: 600;
+    color: var(--vr-text);
+    padding: 0;
+    display: flex;
+    gap: var(--vr-space-2);
+    align-items: baseline;
+}
+
+.det-group__value {
+    font-weight: 400;
+    color: var(--vr-text-muted);
+}
+
+.det-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--vr-space-2);
+}
+
+/* Chips de talle */
+.det-chip {
+    min-width: var(--vr-tap-min);
+    min-height: var(--vr-tap-min);
+    padding: 0 var(--vr-space-3);
+    border: 1px solid var(--vr-border-strong);
+    border-radius: var(--vr-radius-sm);
+    background: var(--vr-surface);
+    color: var(--vr-text);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color var(--vr-dur-fast) var(--vr-ease), background var(--vr-dur-fast) var(--vr-ease);
+}
+
+.det-chip:hover:not(:disabled) {
+    border-color: var(--vr-primary);
+}
+
+.det-chip.is-active {
+    border-color: var(--vr-primary);
+    background: var(--vr-primary-soft);
+    color: var(--vr-primary);
+}
+
+.det-chip.is-disabled,
+.det-swatch.is-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Swatches de color */
+.det-swatch {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    min-height: var(--vr-tap-min);
+    padding: var(--vr-space-2) var(--vr-space-3);
+    border: 1px solid var(--vr-border-strong);
+    border-radius: var(--vr-radius-pill);
+    background: var(--vr-surface);
+    font: inherit;
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text);
+    cursor: pointer;
+    transition: border-color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.det-swatch:hover:not(:disabled) {
+    border-color: var(--vr-primary);
+}
+
+.det-swatch.is-active {
+    border-color: var(--vr-primary);
+    box-shadow: 0 0 0 1px var(--vr-primary) inset;
+}
+
+.det-swatch__dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--swatch, #CBD5CF);
+    border: 1px solid rgba(43, 29, 47, 0.18);
+}
+
+/* ---- Cantidad ---- */
+.det-qty {
+    display: flex;
+    align-items: center;
+    gap: var(--vr-space-4);
+    flex-wrap: wrap;
+}
+
+.det-qty__label {
+    font-size: var(--vr-fs-sm);
+    font-weight: 600;
+    color: var(--vr-text);
+}
+
+/* El control .stepper vive en velvet-base.css (compartido con el carrito). */
+
+/* ---- Acciones ---- */
+.det-actions {
+    display: grid;
+    gap: var(--vr-space-3);
+    margin-top: var(--vr-space-2);
+}
+
+@media (min-width: 600px) {
+    .det-actions {
+        grid-template-columns: 1.4fr 1fr;
+    }
+}

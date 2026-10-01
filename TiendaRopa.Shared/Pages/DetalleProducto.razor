@@ -1,0 +1,411 @@
+@page "/producto/{Id:int}"
+@using TiendaRopa.Contracts.Catalogo
+@using TiendaRopa.Shared.Services
+@inject ICatalogoService CatalogoApi
+@inject CarritoService Carrito
+@inject NavigationManager Navigation
+
+<PageTitle>@(producto?.Nombre ?? "Producto") — Velvet Rose Boutique</PageTitle>
+
+@* Detalle de producto (mockup 05_detalle_producto.png).
+   Consume la API: variantes reales Producto + Talle + Color; no permite
+   combinaciones inexistentes y marca sin stock las variantes con Stock = 0. *@
+
+@if (cargando)
+{
+    <LoadingState Text="Cargando producto..." />
+}
+else if (error is not null)
+{
+    <EmptyState Icon="cloud_off"
+                 Title="No pudimos cargar el producto"
+                 Description="@error">
+        <AppButton Variant="outline" Icon="refresh" OnClick="CargarAsync">
+            Reintentar
+        </AppButton>
+        <AppButton Variant="ghost" Icon="arrow_back" Href="/catalogo">
+            Volver al catálogo
+        </AppButton>
+    </EmptyState>
+}
+else if (producto is null)
+{
+    <EmptyState Icon="search_off"
+                 Title="Producto no encontrado"
+                 Description="La prenda que buscás no existe o ya no está disponible.">
+        <AppButton Variant="primary" Icon="storefront" Href="/catalogo">
+            Explorar catálogo
+        </AppButton>
+    </EmptyState>
+}
+else
+{
+    <nav class="det-breadcrumb" aria-label="Migas de pan">
+        <a href="/catalogo">Catálogo</a>
+        <AppIcon Icon="chevron_right" Size="16" />
+        <a href="@($"/catalogo?cat={Uri.EscapeDataString(producto.Categoria)}")">@producto.Categoria</a>
+        <AppIcon Icon="chevron_right" Size="16" />
+        <span aria-current="page">@producto.Nombre</span>
+    </nav>
+
+    <div class="det-layout">
+        <section class="det-gallery" aria-label="Imágenes del producto">
+            <div class="det-gallery__main">
+                @if (imagenPrincipal is not null)
+                {
+                    <img src="@imagenPrincipal.UrlImagen" alt="@producto.Nombre" />
+                }
+                else
+                {
+                    @* Sin fotos con derechos revisados: marcador de marca. *@
+                    <div class="det-gallery__placeholder" aria-hidden="true">
+                        <AppIcon Icon="checkroom" Size="64" />
+                    </div>
+                }
+            </div>
+
+            @if (producto.Imagenes.Count > 1)
+            {
+                <div class="det-gallery__thumbs">
+                    @foreach (var imagen in producto.Imagenes)
+                    {
+                        <button type="button"
+                                class="det-gallery__thumb @(imagen.Id == imagenSeleccionada ? "is-active" : "")"
+                                @onclick="(() => imagenSeleccionada = imagen.Id)"
+                                aria-label="@($"Ver imagen {imagen.Orden} de {producto.Nombre}")">
+                            <img src="@imagen.UrlImagen" alt="" loading="lazy" />
+                        </button>
+                    }
+                </div>
+            }
+        </section>
+
+        <section class="det-info" aria-labelledby="det-nombre">
+            <p class="det-info__category">@producto.Categoria</p>
+            <h1 class="det-info__name" id="det-nombre">@producto.Nombre</h1>
+
+            <p class="det-info__price">
+                @if (varianteSeleccionada?.Precio is { } precioPropio)
+                {
+                    <span class="det-info__price-now">@Services.CatalogoPresentation.FormatearPrecio(precioPropio)</span>
+                }
+                else
+                {
+                    <span class="det-info__price-now">@Services.CatalogoPresentation.FormatearPrecio(producto.PrecioBase)</span>
+                }
+                <span class="det-info__price-note">IVA incluido</span>
+            </p>
+
+            @if (!string.IsNullOrWhiteSpace(producto.Descripcion))
+            {
+                <p class="det-info__desc">@producto.Descripcion</p>
+            }
+
+            @* ---- Disponibilidad general ---- *@
+            <p class="det-info__stock">
+                @if (varianteSeleccionada is null)
+                {
+                    <StatusBadge Text="Elegí talle y color" Tone="neutral" Icon="info" />
+                }
+                else if (varianteSeleccionada.Stock == 0)
+                {
+                    <StatusBadge Text="Sin stock" Tone="danger" Icon="error" />
+                }
+                else if (varianteSeleccionada.Stock <= 3)
+                {
+                    <StatusBadge Text="@($"Últimas unidades: {varianteSeleccionada.Stock}")" Tone="warning" Icon="local_fire_department" />
+                }
+                else
+                {
+                    <StatusBadge Text="Disponible" Tone="success" Icon="check_circle" />
+                }
+            </p>
+
+            @* ---- Talles ---- *@
+            <fieldset class="det-group">
+                <legend class="det-group__legend">
+                    Talle
+                    @if (talleSeleccionado is not null)
+                    {
+                        <span class="det-group__value">@talleSeleccionado</span>
+                    }
+                </legend>
+                <div class="det-options" role="radiogroup" aria-label="Elegir talle">
+                    @foreach (var talle in Talles)
+                    {
+                        var activo = talle == talleSeleccionado;
+                        var disponible = HayVarianteDisponible(talle, null, soloConStock: false);
+                        <button type="button"
+                                class="det-chip @(activo ? "is-active" : "") @(!disponible ? "is-disabled" : "")"
+                                disabled="@(!disponible)"
+                                aria-pressed="@activo"
+                                title="@(disponible ? null : "Talle sin variantes disponibles")"
+                                @onclick="(() => ElegirTalleAsync(talle))">
+                            @talle
+                        </button>
+                    }
+                </div>
+            </fieldset>
+
+            @* ---- Colores ---- *@
+            <fieldset class="det-group">
+                <legend class="det-group__legend">
+                    Color
+                    @if (colorSeleccionado is not null)
+                    {
+                        <span class="det-group__value">@colorSeleccionado</span>
+                    }
+                </legend>
+                <div class="det-options" role="radiogroup" aria-label="Elegir color">
+                    @foreach (var color in Colores)
+                    {
+                        var activo = color.Nombre == colorSeleccionado;
+                        var disponible = HayVarianteDisponible(null, color.Nombre, soloConStock: false);
+                        <button type="button"
+                                class="det-swatch @(activo ? "is-active" : "") @(!disponible ? "is-disabled" : "")"
+                                disabled="@(!disponible)"
+                                aria-pressed="@activo"
+                                aria-label="Color @color.Nombre"
+                                title="@(disponible ? color.Nombre : $"{color.Nombre}: sin variantes disponibles")"
+                                @onclick="(() => ElegirColorAsync(color.Nombre))">
+                            <span class="det-swatch__dot" style="--swatch: @(color.CodigoHex ?? "#CBD5CF")"></span>
+                            <span class="det-swatch__label">@color.Nombre</span>
+                        </button>
+                    }
+                </div>
+            </fieldset>
+
+            @* ---- Cantidad ---- *@
+            <div class="det-qty">
+                <span class="det-qty__label" id="det-qty-label">Cantidad</span>
+                <div class="stepper" role="group" aria-labelledby="det-qty-label">
+                    <button type="button"
+                            class="stepper__btn"
+                            disabled="@(cantidad <= 1)"
+                            aria-label="Disminuir cantidad"
+                            @onclick="(() => cantidad--)">
+                        <AppIcon Icon="remove" Size="18" />
+                    </button>
+                    <input class="stepper__value"
+                           type="number"
+                           inputmode="numeric"
+                           min="1"
+                           max="@CantidadMaxima"
+                           @bind="cantidad"
+                           @bind:after="NormalizarCantidad"
+                           aria-label="Cantidad" />
+                    <button type="button"
+                            class="stepper__btn"
+                            disabled="@(cantidad >= CantidadMaxima)"
+                            aria-label="Aumentar cantidad"
+                            @onclick="(() => cantidad++)">
+                        <AppIcon Icon="add" Size="18" />
+                    </button>
+                </div>
+            </div>
+
+            @if (aviso is not null)
+            {
+                <p class="det-info__notice" role="status">@aviso</p>
+            }
+
+            <div class="det-actions">
+                <AppButton Variant="primary"
+                           FullWidth
+                           Icon="shopping_cart"
+                           Disabled="@(varianteSeleccionada is null || varianteSeleccionada.Stock == 0 || agregando)"
+                           OnClick="AgregarAlCarritoAsync">
+                    @(agregando ? "Agregando…" : "Agregar al carrito")
+                </AppButton>
+                <AppButton Variant="outline"
+                           Icon="arrow_back"
+                           Href="/catalogo">
+                    Seguir mirando
+                </AppButton>
+            </div>
+        </section>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private ProductoDetalleDto? producto;
+    private IReadOnlyList<VarianteDto> variantes = [];
+    private bool cargando = true;
+    private bool agregando;
+    private string? error;
+    private string? aviso;
+
+    private string? talleSeleccionado;
+    private string? colorSeleccionado;
+    private int cantidad = 1;
+    private int? imagenSeleccionada;
+
+    private IReadOnlyList<string> Talles { get; set; } = [];
+    private IReadOnlyList<OpcionColor> Colores { get; set; } = [];
+
+    /// <summary>Opción de color presentada (nombre + HEX de la primera variante).</summary>
+    private sealed record OpcionColor(string Nombre, string? CodigoHex);
+
+    private VarianteDto? varianteSeleccionada =>
+        variantes.FirstOrDefault(v => v.Talle == talleSeleccionado && v.Color == colorSeleccionado);
+
+    private ProductoImagenDto? imagenPrincipal =>
+        producto?.Imagenes.FirstOrDefault(i => i.Id == imagenSeleccionada)
+        ?? producto?.Imagenes.FirstOrDefault(i => i.Principal)
+        ?? producto?.Imagenes.FirstOrDefault();
+
+    private int CantidadMaxima =>
+        varianteSeleccionada is { Stock: > 0 } v ? Math.Min(v.Stock, 10) : 1;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+        aviso = null;
+
+        try
+        {
+            producto = await CatalogoApi.GetProductoAsync(Id);
+            variantes = producto is null ? [] : await CatalogoApi.GetVariantesAsync(Id);
+
+            if (producto is null)
+            {
+                cargando = false;
+                return;
+            }
+
+            // Orden de presentación: talles y colores en la primera aparición.
+            Talles = variantes.Select(v => v.Talle).Distinct().ToList();
+            Colores = variantes
+                .GroupBy(v => v.Color)
+                .Select(g => new OpcionColor(g.Key, g.First().CodigoHex))
+                .ToList();
+
+            // Selección inicial: primera variante con stock; si no hay, la primera.
+            var inicial = variantes.FirstOrDefault(v => v.Stock > 0) ?? variantes.FirstOrDefault();
+            talleSeleccionado = inicial?.Talle;
+            colorSeleccionado = inicial?.Color;
+            cantidad = 1;
+            imagenSeleccionada = producto.Imagenes.FirstOrDefault()?.Id;
+        }
+        catch (Exception ex)
+        {
+            producto = null;
+            error = ex is HttpRequestException
+                ? "No pudimos conectar con la tienda. Revisá tu conexión e intentá de nuevo."
+                : "Ocurrió un error al cargar el producto.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    /// <summary>
+    /// ¿Existe alguna variante para el talle/color indicados?
+    /// Con soloConStock=true exige Stock > 0 (para habilitar/deshabilitar chips).
+    /// </summary>
+    private bool HayVarianteDisponible(string? talle, string? color, bool soloConStock)
+    {
+        return variantes.Any(v =>
+            (talle is null || v.Talle == talle)
+            && (color is null || v.Color == color)
+            && (!soloConStock || v.Stock > 0));
+    }
+
+    private Task ElegirTalleAsync(string talle)
+    {
+        talleSeleccionado = talle;
+
+        // Re-validar la combinación: si el color actual no existe con ese talle
+        // (o quedó sin stock), se elige el primero que sí exista.
+        var combo = variantes.FirstOrDefault(v => v.Talle == talle && v.Color == colorSeleccionado);
+        if (combo is null || combo.Stock == 0)
+        {
+            var alternativa = variantes.FirstOrDefault(v => v.Talle == talle && v.Stock > 0)
+                ?? variantes.FirstOrDefault(v => v.Talle == talle);
+            colorSeleccionado = alternativa?.Color;
+        }
+
+        cantidad = 1;
+        aviso = null;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task ElegirColorAsync(string color)
+    {
+        colorSeleccionado = color;
+
+        var combo = variantes.FirstOrDefault(v => v.Talle == talleSeleccionado && v.Color == color);
+        if (combo is null || combo.Stock == 0)
+        {
+            var alternativa = variantes.FirstOrDefault(v => v.Color == color && v.Stock > 0)
+                ?? variantes.FirstOrDefault(v => v.Color == color);
+            talleSeleccionado = alternativa?.Talle;
+        }
+
+        cantidad = 1;
+        aviso = null;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void NormalizarCantidad()
+    {
+        if (cantidad < 1)
+        {
+            cantidad = 1;
+        }
+        else if (cantidad > CantidadMaxima)
+        {
+            cantidad = CantidadMaxima;
+        }
+    }
+
+    private async Task AgregarAlCarritoAsync()
+    {
+        aviso = null;
+
+        if (producto is null || varianteSeleccionada is not { } variante || variante.Stock == 0)
+        {
+            return;
+        }
+
+        NormalizarCantidad();
+        agregando = true;
+
+        try
+        {
+            await Carrito.AgregarAsync(new ItemCarrito
+            {
+                IdProducto = producto.Id,
+                IdProductoVariante = variante.Id,
+                Nombre = producto.Nombre,
+                Imagen = imagenPrincipal?.UrlImagen,
+                Talle = variante.Talle,
+                Color = variante.Color,
+                Cantidad = cantidad,
+                PrecioUnitario = variante.Precio ?? producto.PrecioBase,
+            });
+
+            aviso = $"Agregado al carrito: {producto.Nombre} (talle {variante.Talle}, color {variante.Color}) × {cantidad}.";
+            cantidad = 1;
+        }
+        catch (Exception)
+        {
+            aviso = "No pudimos agregar el producto al carrito. Intentá nuevamente.";
+        }
+        finally
+        {
+            agregando = false;
+        }
+    }
+}

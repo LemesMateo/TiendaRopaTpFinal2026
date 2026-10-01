@@ -63,7 +63,6 @@ public static class DevelopmentSeeder
         db.AddRange(colores);
         db.AddRange(categorias);
         await db.SaveChangesAsync(cancellationToken);
-
         // ---- Productos de prueba con variantes (sin imágenes) ----
         Talle Talle(string n) => talles.Single(t => t.Nombre == n);
         Color Color(string n) => colores.Single(c => c.Nombre == n);
@@ -95,8 +94,7 @@ public static class DevelopmentSeeder
         db.AddRange(
             CrearProducto("Vestidos", "Vestido Rococó Midi",
                 "Vestido midi con vuelo y cinturón, tejido liviano para primavera.",
-                45990, ("S", "Rosa", 6), ("M", "Rosa", 4), ("L", "Ciruela", 0)),
-            CrearProducto("Vestidos", "Vestido Satinado Noche",
+                45990, ("S", "Rosa", 6), ("M", "Rosa", 4), ("L", "Ciruela", 0)),            CrearProducto("Vestidos", "Vestido Satinado Noche",
                 "Vestido de satén con cuello barco, ideal para eventos.",
                 62990, ("S", "Negro", 3), ("M", "Negro", 5), ("L", "Negro", 2)),
             CrearProducto("Vestidos", "Vestido Campo Cropped",

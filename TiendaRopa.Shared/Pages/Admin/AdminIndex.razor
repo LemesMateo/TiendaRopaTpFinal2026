@@ -1,0 +1,132 @@
+@page "/admin"
+@using TiendaRopa.Contracts.Admin
+@using TiendaRopa.Shared.Services
+@inject IAdminService AdminApi
+@inject SesionService Sesion
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>Administración — Velvet Rose Boutique</PageTitle>
+
+@* Panel administrativo (mockup 08_panel_administrador.png).
+   Sólo rol Administrador: el backend exige el JWT con rol desde /api/admin/*;
+   esta pantalla sólo evita mostrar UI inútil a clientes. *@
+
+@if (!sesionCargada)
+{
+    <LoadingState Text="Verificando tu sesión..." />
+}
+else if (!Sesion.Iniciada)
+{
+    <EmptyState Icon="lock"
+                 Title="Iniciá sesión para administrar"
+                 Description="Esta sección es exclusiva para administradores.">
+        <AppButton Variant="primary" Icon="login" Href="/login?redirect=/admin">
+            Iniciar sesión
+        </AppButton>
+    </EmptyState>
+}
+else if (!Sesion.EsAdministrador)
+{
+    <EmptyState Icon="admin_panel_settings"
+                 Title="No tenés permisos"
+                 Description="Tu cuenta no tiene el rol Administrador. Si creés que es un error, contactá al responsable de la tienda.">
+        <AppButton Variant="outline" Icon="home" Href="/">
+            Volver al inicio
+        </AppButton>
+    </EmptyState>
+}
+else
+{
+    <header class="page-head">
+        <h1>Administración</h1>
+        <p class="page-sub">Gestión de catálogo, stock y pedidos de Velvet Rose.</p>
+    </header>
+
+    <nav class="admin-cards" aria-label="Secciones de administración">
+        <a href="/admin/productos" class="admin-card">
+            <AppIcon Icon="checkroom" Size="30" />
+            <span class="admin-card__title">Productos</span>
+            <span class="admin-card__desc">Alta, edición y baja lógica de prendas.</span>
+        </a>
+        <a href="/admin/productos" class="admin-card">
+            <AppIcon Icon="inventory_2" Size="30" />
+            <span class="admin-card__title">Variantes y stock</span>
+            <span class="admin-card__desc">Talle + color con precios y cantidades.</span>
+        </a>
+        <a href="/admin/pedidos" class="admin-card">
+            <AppIcon Icon="receipt_long" Size="30" />
+            <span class="admin-card__title">Pedidos</span>
+            <span class="admin-card__desc">Estados, detalle y transiciones.</span>
+        </a>
+        <a href="/admin/catalogos" class="admin-card">
+            <AppIcon Icon="category" Size="30" />
+            <span class="admin-card__title">Categorías, talles y colores</span>
+            <span class="admin-card__desc">Tablas de referencia del catálogo.</span>
+        </a>
+    </nav>
+
+    @if (resumen is not null)
+    {
+        <section class="admin-stats" aria-label="Resumen">
+            <div class="admin-stat">
+                <span class="admin-stat__value">@resumen.Productos</span>
+                <span class="admin-stat__label">Productos activos</span>
+            </div>
+            <div class="admin-stat">
+                <span class="admin-stat__value">@resumen.StockTotal</span>
+                <span class="admin-stat__label">Unidades en stock</span>
+            </div>
+            <div class="admin-stat">
+                <span class="admin-stat__value">@resumen.PedidosPendientes</span>
+                <span class="admin-stat__label">Pedidos pendientes</span>
+            </div>
+        </section>
+    }
+}
+
+@code {
+    private sealed record Resumen(int Productos, int StockTotal, int PedidosPendientes);
+
+    private bool sesionCargada;
+    private Resumen? resumen;
+
+    protected override void OnInitialized() => Sesion.Cambio += OnSesionCambiada;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!sesionCargada)
+        {
+            await Sesion.CargarAsync();
+            sesionCargada = true;
+            StateHasChanged();
+
+            if (Sesion.EsAdministrador)
+            {
+                await CargarResumenAsync();
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task CargarResumenAsync()
+    {
+        try
+        {
+            var productos = await AdminApi.GetProductosAsync(null, activo: true, 1, 1);
+            var pedidos = await AdminApi.GetPedidosAsync("Pendiente", 1, 1);
+            resumen = new Resumen(
+                productos.TotalItems,
+                productos.Items.Sum(p => p.StockTotal),
+                pedidos.TotalItems);
+        }
+        catch (Exception)
+        {
+            resumen = null;
+        }
+    }
+
+    private void OnSesionCambiada() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Sesion.Cambio -= OnSesionCambiada;
+}

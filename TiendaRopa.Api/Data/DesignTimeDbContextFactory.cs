@@ -21,7 +21,7 @@ public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<Vel
             .Build();
 
         var connectionString = configuration.GetConnectionString("VelvetRose")
-            ?? "Server=(localdb)\\MSSQLLocalDB;Database=VelvetRoseDev;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true";
+            ?? "Server=localhost;Database=VelvetRoseDev;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true";
 
         var options = new DbContextOptionsBuilder<VelvetRoseDbContext>()
             .UseSqlServer(connectionString)

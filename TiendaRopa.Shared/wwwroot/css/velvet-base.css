@@ -238,3 +238,56 @@ button {
         scroll-behavior: auto !important;
     }
 }
+
+/* Control de cantidad (+/-) compartido por detalle de producto y carrito */
+.stepper {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--vr-border-strong);
+    border-radius: var(--vr-radius-sm);
+    background: var(--vr-surface);
+    overflow: hidden;
+}
+
+.stepper__btn {
+    min-width: var(--vr-tap-min);
+    min-height: var(--vr-tap-min);
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    color: var(--vr-plum);
+    cursor: pointer;
+    font: inherit;
+}
+
+.stepper__btn:disabled {
+    color: var(--vr-text-subtle);
+    cursor: not-allowed;
+}
+
+.stepper__value {
+    min-width: 52px;
+    min-height: var(--vr-tap-min);
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-inline: 1px solid var(--vr-border);
+    text-align: center;
+    font: inherit;
+    font-weight: 600;
+    color: var(--vr-text);
+    background: transparent;
+    -moz-appearance: textfield;
+}
+
+input.stepper__value {
+    appearance: textfield;
+    -webkit-appearance: textfield;
+}
+
+.stepper__value::-webkit-outer-spin-button,
+.stepper__value::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}

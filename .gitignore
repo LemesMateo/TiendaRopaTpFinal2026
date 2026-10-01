@@ -9,6 +9,13 @@
 artifacts/
 test-evidence/
 
+# --- Pruebas Web (Playwright) -------------------------------------------
+node_modules/
+package-lock.json
+
+# --- Artefactos temporales de desarrollo/pruebas ------------------------
+.temp/
+
 # --- .NET / compilación (bin, obj de TODOS los proyectos) ------------
 [Bb]in/
 [Oo]bj/

@@ -12,7 +12,6 @@
                 <AppIcon Icon="checkroom" Size="44" />
             </div>
         }
-
         @if (!string.IsNullOrWhiteSpace(Badge))
         {
             <div class="vr-product-card__badge">
@@ -34,7 +33,16 @@
         {
             <p class="vr-product-card__category">@Category</p>
         }
-        <h3 class="vr-product-card__name">@Name</h3>
+        @if (!string.IsNullOrWhiteSpace(Href))
+        {
+            <h3 class="vr-product-card__name">
+                <a href="@Href" class="vr-product-card__link">@Name</a>
+            </h3>
+        }
+        else
+        {
+            <h3 class="vr-product-card__name">@Name</h3>
+        }
         <p class="vr-product-card__price">
             <span class="vr-product-card__price-now">@Price</span>
             @if (!string.IsNullOrWhiteSpace(OriginalPrice))
@@ -43,15 +51,29 @@
             }
         </p>
         <div class="vr-product-card__cta">
-            <AppButton Variant="primary"
-                       Size="sm"
-                       FullWidth
-                       Icon="shopping_cart"
-                       Disabled="!OnAdd.HasDelegate"
-                       title="@(OnAdd.HasDelegate ? null : "Carrito pendiente de implementación")"
-                       OnClick="HandleAdd">
-                Agregar al carrito
-            </AppButton>
+            @if (!string.IsNullOrWhiteSpace(Href))
+            {
+                @* Sin OnAdd, el CTA lleva al detalle donde se elige la variante. *@
+                <AppButton Variant="primary"
+                           Size="sm"
+                           FullWidth
+                           Icon="visibility"
+                           Href="@Href">
+                    Ver detalle
+                </AppButton>
+            }
+            else
+            {
+                <AppButton Variant="primary"
+                           Size="sm"
+                           FullWidth
+                           Icon="shopping_cart"
+                           Disabled="!OnAdd.HasDelegate"
+                           title="@(OnAdd.HasDelegate ? null : "Carrito pendiente de implementación")"
+                           OnClick="HandleAdd">
+                    Agregar al carrito
+                </AppButton>
+            }
         </div>
     </div>
 </article>
@@ -84,6 +106,11 @@
     /// <summary>URL de la foto. Si es null se muestra un marcador visual.</summary>
     [Parameter]
     public string? ImageUrl { get; set; }
+
+    /// <summary>Ruta de detalle (por ejemplo /producto/3). Si se informa, el
+    /// nombre y el CTA navegan al detalle de producto.</summary>
+    [Parameter]
+    public string? Href { get; set; }
 
     /// <summary>Se dispara al pulsar "Agregar al carrito".
     /// Sin delegado, el botón queda deshabilitado (carrito aún no existe).</summary>

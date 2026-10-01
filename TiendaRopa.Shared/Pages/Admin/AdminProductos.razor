@@ -1,0 +1,548 @@
+@page "/admin/productos"
+@using TiendaRopa.Contracts.Admin
+@using TiendaRopa.Shared.Services
+@inject IAdminService AdminApi
+@inject SesionService Sesion
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>Productos — Administración — Velvet Rose Boutique</PageTitle>
+
+@* Gestión de productos y variantes (mockup 09_gestion_productos.png).
+   Baja lógica para conservar historial; variantes sin duplicar
+   producto+talle+color y sin stock negativo (también validado en backend). *@
+
+@if (!sesionCargada)
+{
+    <LoadingState Text="Verificando tu sesión..." />
+}
+else if (!Sesion.EsAdministrador)
+{
+    <EmptyState Icon="admin_panel_settings"
+                 Title="Sección restringida"
+                 Description="Necesitás iniciar sesión con una cuenta administradora.">
+        <AppButton Variant="primary" Icon="login" Href="/login?redirect=/admin/productos">
+            Iniciar sesión
+        </AppButton>
+    </EmptyState>
+}
+else
+{
+    <header class="admin-head">
+        <div>
+            <h1>Productos</h1>
+            <p class="page-sub">Alta, edición, variantes y baja lógica.</p>
+        </div>
+        <AppButton Variant="primary" Icon="add" OnClick="NuevoProducto">
+            Nuevo producto
+        </AppButton>
+    </header>
+
+    <div class="admin-toolbar">
+        <SearchBar Value="@buscar"
+                   ValueChanged="OnBuscar"
+                   Placeholder="Buscar productos..."
+                   Label="Buscar productos por nombre o categoría" />
+        <label class="admin-filter">
+            <span>Estado</span>
+            <select @bind="filtroActivo" @bind:after="CargarAsync">
+                <option value="">Todos</option>
+                <option value="true">Activos</option>
+                <option value="false">Inactivos</option>
+            </select>
+        </label>
+    </div>
+
+    @if (mensaje is not null)
+    {
+        <p class="admin-notice @(esError ? "is-error" : "")" role="alert">@mensaje</p>
+    }
+
+    @if (editando is not null)
+    {
+        <section class="admin-form" aria-labelledby="form-title">
+            <h2 id="form-title">@(editando.Id == 0 ? "Nuevo producto" : $"Editar producto #{editando.Id}")</h2>
+
+            <div class="admin-form__grid">
+                <label class="admin-field admin-field--wide">
+                    <span>Nombre *</span>
+                    <input type="text" @bind="editando.Nombre" maxlength="200" />
+                </label>
+
+                <label class="admin-field">
+                    <span>Categoría *</span>
+                    <select @bind="editando.IdCategoria">
+                        <option value="0">Seleccionar…</option>
+                        @foreach (var categoria in categorias)
+                        {
+                            <option value="@categoria.Id">@categoria.Nombre</option>
+                        }
+                    </select>
+                </label>
+
+                <label class="admin-field">
+                    <span>Precio base *</span>
+                    <input type="number" min="0" step="0.01" @bind="editando.PrecioBase" />
+                </label>
+
+                <label class="admin-field admin-field--wide">
+                    <span>Descripción</span>
+                    <textarea rows="3" maxlength="2000" @bind="editando.Descripcion"></textarea>
+                </label>
+
+                <label class="admin-check">
+                    <input type="checkbox" @bind="editando.Activo" />
+                    <span>Producto activo (visible en el catálogo)</span>
+                </label>
+            </div>
+
+            <div class="admin-form__actions">
+                <AppButton Variant="primary" Icon="save" Disabled="guardando" OnClick="GuardarProductoAsync">
+                    @(guardando ? "Guardando…" : "Guardar")
+                </AppButton>
+                <AppButton Variant="ghost" Icon="close" OnClick="CancelarEdicion">
+                    Cancelar
+                </AppButton>
+            </div>
+
+            @if (editando.Id != 0 && productoEditado is not null)
+            {
+                <section class="admin-variants" aria-labelledby="variants-title">
+                    <h3 id="variants-title">Variantes (talle + color + stock + precio)</h3>
+
+                    <ul class="admin-variants__list">
+                        @foreach (var variante in productoEditado.Variantes)
+                        {
+                            <li>
+                                <span class="admin-variants__swatch" style="--swatch: @(variante.CodigoHex ?? "#CBD5CF")"></span>
+                                <strong>@variante.Talle</strong> · @variante.Color
+                                <span class="admin-variants__stock @(variante.Stock == 0 ? "is-empty" : variante.Stock <= 3 ? "is-low" : "")">
+                                    @($"stock {variante.Stock}")
+                                </span>
+                                <span class="admin-variants__price">
+                                    @(variante.Precio is { } p
+                                        ? Services.CatalogoPresentation.FormatearPrecio(p)
+                                        : "c/ precio base")
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                    @if (productoEditado.Variantes.Count == 0)
+                    {
+                        <p class="admin-variants__empty">Este producto todavía no tiene variantes.</p>
+                    }
+
+                    <div class="admin-form__grid admin-variants__form">
+                        <label class="admin-field">
+                            <span>Talle</span>
+                            <select @bind="nuevaVariante.IdTalle">
+                                <option value="0">Elegir…</option>
+                                @foreach (var talle in talles)
+                                {
+                                    <option value="@talle.Id">@talle.Nombre</option>
+                                }
+                            </select>
+                        </label>
+                        <label class="admin-field">
+                            <span>Color</span>
+                            <select @bind="nuevaVariante.IdColor">
+                                <option value="0">Elegir…</option>
+                                @foreach (var color in colores)
+                                {
+                                    <option value="@color.Id">@color.Nombre</option>
+                                }
+                            </select>
+                        </label>
+                        <label class="admin-field">
+                            <span>Stock</span>
+                            <input type="number" min="0" @bind="nuevaVariante.Stock" />
+                        </label>
+                        <label class="admin-field">
+                            <span>Precio (vacío = base)</span>
+                            <input type="number" min="0" step="0.01" @bind="nuevaVariante.Precio" />
+                        </label>
+                    </div>
+
+                    <AppButton Variant="outline" Icon="add" Disabled="guardando" OnClick="GuardarVarianteAsync">
+                        Guardar variante
+                    </AppButton>
+                </section>
+            }
+        </section>
+    }
+
+    @if (cargando)
+    {
+        <LoadingState Text="Cargando productos..." />
+    }
+    else if (productos.Count == 0)
+    {
+        <EmptyState Icon="inventory_2"
+                    Title="Sin productos"
+                    Description="No hay productos que coincidan con el filtro.">
+        </EmptyState>
+    }
+    else
+    {
+        <ul class="admin-list">
+            @foreach (var producto in productos)
+            {
+                <li class="admin-list__item @(producto.Activo ? "" : "is-inactive")">
+                    <div class="admin-list__media">
+                        @if (!string.IsNullOrWhiteSpace(producto.UrlImagen))
+                        {
+                            <img src="@producto.UrlImagen" alt="@producto.Nombre" />
+                        }
+                        else
+                        {
+                            <div class="admin-list__placeholder" aria-hidden="true">
+                                <AppIcon Icon="checkroom" Size="22" />
+                            </div>
+                        }
+                    </div>
+
+                    <div class="admin-list__body">
+                        <p class="admin-list__name">@producto.Nombre</p>
+                        <p class="admin-list__meta">
+                            @producto.Categoria ·
+                            @(Services.CatalogoPresentation.FormatearPrecio(producto.PrecioBase)) ·
+                            @producto.CantidadVariantes @(producto.CantidadVariantes == 1 ? "variante" : "variantes") ·
+                            stock total @producto.StockTotal
+                        </p>
+                    </div>
+
+                    <StatusBadge Text="@(producto.Activo ? "Activo" : "Inactivo")"
+                                 Tone="@(producto.Activo ? "success" : "neutral")" />
+
+                    <div class="admin-list__actions">
+                        <AppButton Variant="outline" Size="sm" Icon="edit" OnClick="(() => Editar(producto))">
+                            Editar
+                        </AppButton>
+                        @if (producto.Activo)
+                        {
+                            <AppButton Variant="ghost" Size="sm" Icon="archive" OnClick="(() => Desactivar(producto))">
+                                Desactivar
+                            </AppButton>
+                        }
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+}
+
+@code {
+    private bool sesionCargada;
+    private bool cargando = true;
+    private bool guardando;
+    private string? mensaje;
+    private bool esError;
+
+    private string? buscar;
+    private string filtroActivo = "";
+
+    private List<ProductoAdminDto> productos = [];
+    private List<EntidadCatalogoDto> categorias = [];
+    private List<EntidadCatalogoDto> talles = [];
+    private List<EntidadCatalogoDto> colores = [];
+
+    private ProductoUpsertRequest? editando;
+    /// <summary>Copia editable con variantes (se recarga tras cada alta/edición).</summary>
+    private ProductoAdminDto? productoEditado;
+    private VarianteUpsertRequest nuevaVariante = new()
+    {
+        IdProducto = 0,
+        IdTalle = 0,
+        IdColor = 0,
+        Stock = 1,
+    };
+
+    private CancellationTokenSource? busquedaCts;
+
+    protected override void OnInitialized() => Sesion.Cambio += OnSesionCambiada;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!sesionCargada)
+        {
+            await Sesion.CargarAsync();
+            sesionCargada = true;
+            StateHasChanged();
+
+            if (Sesion.EsAdministrador)
+            {
+                await CargarListasAsync();
+                await CargarAsync();
+            }
+        }
+    }
+
+    private void OnSesionCambiada() => InvokeAsync(StateHasChanged);
+
+    private async Task CargarListasAsync()
+    {
+        try
+        {
+            categorias = (await AdminApi.GetCategoriasAsync(activo: true)).ToList();
+            talles = (await AdminApi.GetTallesAsync(activo: true)).ToList();
+            colores = (await AdminApi.GetColoresAsync(activo: true)).ToList();
+        }
+        catch (Exception)
+        {
+            // Los selects quedan vacíos; el mensaje de error lo da CargarAsync.
+        }
+    }
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        StateHasChanged();
+
+        try
+        {
+            bool? activo = filtroActivo switch
+            {
+                "true" => true,
+                "false" => false,
+                _ => null,
+            };
+
+            var resultado = await AdminApi.GetProductosAsync(buscar, activo, 1, 50);
+            productos = resultado.Items.ToList();
+            mensaje = productos.Count == 0 ? "No hay productos para ese filtro." : null;
+            esError = false;
+        }
+        catch (Exception)
+        {
+            productos = [];
+            mensaje = "No pudimos conectar con la tienda.";
+            esError = true;
+        }
+        finally
+        {
+            cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private Task OnBuscar(string valor)
+    {
+        buscar = valor;
+        busquedaCts?.Cancel();
+        busquedaCts?.Dispose();
+        var cts = new CancellationTokenSource();
+        busquedaCts = cts;
+        return BuscarConRetardoAsync(cts.Token);
+    }
+
+    private async Task BuscarConRetardoAsync(CancellationToken ct)
+    {
+        try
+        {
+            await Task.Delay(350, ct);
+            await CargarAsync();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void NuevoProducto()
+    {
+        productoEditado = null;
+        editando = new ProductoUpsertRequest
+        {
+            Id = 0,
+            Nombre = string.Empty,
+            IdCategoria = categorias.FirstOrDefault()?.Id ?? 0,
+            PrecioBase = 0,
+            Activo = true,
+        };
+        mensaje = null;
+    }
+
+    private void Editar(ProductoAdminDto producto)
+    {
+        productoEditado = producto;
+        editando = new ProductoUpsertRequest
+        {
+            Id = producto.Id,
+            Nombre = producto.Nombre,
+            IdCategoria = producto.IdCategoria,
+            Descripcion = producto.Descripcion,
+            PrecioBase = producto.PrecioBase,
+            Activo = producto.Activo,
+        };
+        nuevaVariante = new VarianteUpsertRequest
+        {
+            IdProducto = producto.Id,
+            IdTalle = 0,
+            IdColor = 0,
+            Stock = 1,
+        };
+        mensaje = null;
+    }
+
+    private void CancelarEdicion()
+    {
+        editando = null;
+        productoEditado = null;
+        mensaje = null;
+    }
+
+    private async Task GuardarProductoAsync()
+    {
+        if (editando is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(editando.Nombre))
+        {
+            mensaje = "Ingresá el nombre del producto.";
+            esError = true;
+            return;
+        }
+
+        guardando = true;
+        StateHasChanged();
+
+        try
+        {
+            var guardado = await AdminApi.GuardarProductoAsync(editando);
+            if (guardado is null)
+            {
+                mensaje = AdminApi.UltimoError ?? "No se pudo guardar el producto.";
+                esError = true;
+                return;
+            }
+
+            mensaje = $"Producto \"{guardado.Nombre}\" guardado.";
+            esError = false;
+            Editar(guardado);
+            await CargarAsync();
+        }
+        catch (Exception)
+        {
+            mensaje = "No pudimos conectar con la tienda.";
+            esError = true;
+        }
+        finally
+        {
+            guardando = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task GuardarVarianteAsync()
+    {
+        if (editando is null)
+        {
+            return;
+        }
+
+        if (nuevaVariante.IdTalle == 0 || nuevaVariante.IdColor == 0)
+        {
+            mensaje = "Elegí talle y color para la variante.";
+            esError = true;
+            return;
+        }
+
+        guardando = true;
+        StateHasChanged();
+
+        try
+        {
+            var variante = await AdminApi.GuardarVarianteAsync(new VarianteUpsertRequest
+            {
+                IdProducto = editando.Id,
+                IdTalle = nuevaVariante.IdTalle,
+                IdColor = nuevaVariante.IdColor,
+                Stock = Math.Max(0, nuevaVariante.Stock),
+                Precio = nuevaVariante.Precio,
+            });
+
+            if (variante is null)
+            {
+                // 409 de duplicado u otro rechazo de negocio.
+                mensaje = AdminApi.UltimoError ?? "No se pudo guardar la variante.";
+                esError = true;
+                return;
+            }
+
+            mensaje = $"Variante {variante.Talle} / {variante.Color} guardada.";
+            esError = false;
+            nuevaVariante = new VarianteUpsertRequest
+            {
+                IdProducto = editando.Id,
+                IdTalle = 0,
+                IdColor = 0,
+                Stock = 1,
+            };
+            await RecargarProductoAsync(editando.Id);
+            await CargarAsync();
+        }
+        catch (Exception)
+        {
+            mensaje = "No pudimos conectar con la tienda.";
+            esError = true;
+        }
+        finally
+        {
+            guardando = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RecargarProductoAsync(int id)
+    {
+        var producto = await AdminApi.GetProductoAsync(id);
+        if (producto is not null)
+        {
+            Editar(producto);
+        }
+    }
+
+    private async Task Desactivar(ProductoAdminDto producto)
+    {
+        guardando = true;
+        StateHasChanged();
+
+        try
+        {
+            var ok = await AdminApi.DesactivarProductoAsync(producto.Id);
+            mensaje = ok
+                ? $"\"{producto.Nombre}\" se desactivó (baja lógica: conserva el historial)."
+                : AdminApi.UltimoError ?? "No se pudo desactivar el producto.";
+            esError = !ok;
+
+            if (ok)
+            {
+                if (editando?.Id == producto.Id)
+                {
+                    editando = null;
+                    productoEditado = null;
+                }
+
+                await CargarAsync();
+            }
+        }
+        catch (Exception)
+        {
+            mensaje = "No pudimos conectar con la tienda.";
+            esError = true;
+        }
+        finally
+        {
+            guardando = false;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        Sesion.Cambio -= OnSesionCambiada;
+        busquedaCts?.Cancel();
+        busquedaCts?.Dispose();
+    }
+}

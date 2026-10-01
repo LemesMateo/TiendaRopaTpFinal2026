@@ -1,10 +1,15 @@
 @page "/registro"
 @using System.Text.RegularExpressions
+@using TiendaRopa.Contracts.Identidad
+@using TiendaRopa.Shared.Services
+@inject IAuthService AuthApi
+@inject NavigationManager Navigation
 
 <PageTitle>Crear cuenta — Velvet Rose Boutique</PageTitle>
 
-@* Registro (mockup 02_registro.png). Sólo UI y validación en cliente:
-   no existe servicio de alta de usuarios hasta que haya API. *@
+@* Registro (mockup 02_registro.png) conectado a la API.
+   La contraseña viaja sólo al backend, que la hashea con PasswordHasher
+   (PBKDF2 + salt): nunca se guarda ni se recibe en texto plano. *@
 
 <AuthPanel Title="Crear Cuenta"
            Subtitle="Unite a Velvet Rose Boutique."
@@ -50,8 +55,8 @@
     </Fields>
 
     <Actions>
-        <AppButton Variant="primary" FullWidth Icon="person_add" Type="submit">
-            Crear Cuenta
+        <AppButton Variant="primary" FullWidth Icon="person_add" Type="submit" Disabled="enviando">
+            @(enviando ? "Creando cuenta…" : "Crear Cuenta")
         </AppButton>
     </Actions>
 
@@ -67,14 +72,16 @@
     private string? password;
     private bool acceptTerms;
     private string? notice;
+    private bool enviando;
     private readonly Dictionary<string, string> errors = new();
 
     private string? GetError(string field)
         => errors.TryGetValue(field, out var message) ? message : null;
 
-    private void Submit()
+    private async Task Submit()
     {
         errors.Clear();
+        notice = null;
 
         if (string.IsNullOrWhiteSpace(firstName))
         {
@@ -111,12 +118,38 @@
 
         if (errors.Count > 0)
         {
-            notice = null;
             return;
         }
 
-        // Sin backend todavía: no se envían datos personales.
-        notice = "El registro estará disponible cuando se conecte la API. " +
-                 "Por el momento no se enviaron tus datos.";
+        enviando = true;
+        StateHasChanged();
+
+        try
+        {
+            var sesion = await AuthApi.RegistroAsync(new RegistroRequest
+            {
+                Nombre = firstName!.Trim(),
+                Apellido = lastName!.Trim(),
+                Email = email!.Trim(),
+                Password = password!,
+            });
+
+            if (sesion is null)
+            {
+                notice = (AuthApi as HttpAuthService)?.UltimoError
+                    ?? "No pudimos crear la cuenta. Revisá los datos e intentá nuevamente.";
+                return;
+            }
+
+            Navigation.NavigateTo("/");
+        }
+        catch (Exception)
+        {
+            notice = "No pudimos conectar con la tienda. Intentá nuevamente en unos segundos.";
+        }
+        finally
+        {
+            enviando = false;
+        }
     }
 }

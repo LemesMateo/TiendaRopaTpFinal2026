@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject NavigationManager Navigation
+@inject TiendaRopa.Shared.Services.SesionService Sesion
 
 <div class="app-shell" @onkeydown="HandleKeyDown">
 
@@ -54,6 +55,37 @@
                     </a>
                 </li>
             }
+            @if (sesionCargada)
+            {
+                @if (Sesion.Iniciada)
+                {
+                    <li>
+                        <a href="/mis-pedidos"
+                           class="@(IsActive("/mis-pedidos", false) ? "is-active" : null)"
+                           aria-current="@(IsActive("/mis-pedidos", false) ? "page" : null)">
+                            <AppIcon Icon="receipt_long" Size="22" />
+                            <span>Mis pedidos</span>
+                        </a>
+                    </li>
+                    @if (Sesion.EsAdministrador)
+                    {
+                        <li>
+                            <a href="/admin"
+                               class="@(IsActive("/admin", false) ? "is-active" : null)"
+                               aria-current="@(IsActive("/admin", false) ? "page" : null)">
+                                <AppIcon Icon="admin_panel_settings" Size="22" />
+                                <span>Administración</span>
+                            </a>
+                        </li>
+                    }
+                    <li>
+                        <button type="button" class="app-navlist__logout" @onclick="CerrarSesionAsync">
+                            <AppIcon Icon="logout" Size="22" />
+                            <span>Cerrar sesión</span>
+                        </button>
+                    </li>
+                }
+            }
         </ul>
     </nav>
 
@@ -70,6 +102,34 @@
                         <AppIcon Icon="@item.Icon" Size="22" Filled="@active" />
                         <span>@item.Label</span>
                     </a>
+                </li>
+            }
+            @if (sesionCargada && Sesion.Iniciada)
+            {
+                <li>
+                    <a href="/mis-pedidos"
+                       class="@(IsActive("/mis-pedidos", false) ? "is-active" : null)"
+                       aria-current="@(IsActive("/mis-pedidos", false) ? "page" : null)">
+                        <AppIcon Icon="receipt_long" Size="22" />
+                        <span>Mis pedidos</span>
+                    </a>
+                </li>
+                @if (Sesion.EsAdministrador)
+                {
+                    <li>
+                        <a href="/admin"
+                           class="@(IsActive("/admin", false) ? "is-active" : null)"
+                           aria-current="@(IsActive("/admin", false) ? "page" : null)">
+                            <AppIcon Icon="admin_panel_settings" Size="22" />
+                            <span>Administración</span>
+                        </a>
+                    </li>
+                }
+                <li>
+                    <button type="button" class="app-navlist__logout" @onclick="CerrarSesionAsync">
+                        <AppIcon Icon="logout" Size="22" />
+                        <span>Cerrar sesión</span>
+                    </button>
                 </li>
             }
         </ul>
@@ -113,12 +173,33 @@
 
     private bool drawerOpen;
     private string currentPath = "/";
+    private bool sesionCargada;
     private ElementReference menuButton;
 
     protected override void OnInitialized()
     {
         Navigation.LocationChanged += OnLocationChanged;
+        Sesion.Cambio += OnSesionCambiada;
         UpdateCurrentPath();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!sesionCargada)
+        {
+            await Sesion.CargarAsync();
+            sesionCargada = true;
+            StateHasChanged();
+        }
+    }
+
+    private void OnSesionCambiada() => _ = InvokeAsync(StateHasChanged);
+
+    private async Task CerrarSesionAsync()
+    {
+        await Sesion.CerrarSesionAsync();
+        CloseDrawer();
+        Navigation.NavigateTo("/");
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -170,5 +251,6 @@
     public void Dispose()
     {
         Navigation.LocationChanged -= OnLocationChanged;
+        Sesion.Cambio -= OnSesionCambiada;
     }
 }

@@ -10,7 +10,7 @@ namespace TiendaRopa.Shared.Services;
 /// Cliente HTTP del catálogo reutilizable por Blazor Web y MAUI.
 /// Requiere un <see cref="HttpClient"/> con BaseAddress configurado en DI.
 /// </summary>
-public sealed class HttpCatalogoService(HttpClient http) : ICatalogoService
+public sealed class HttpCatalogoService(HttpClient http, AssetsBase assets) : ICatalogoService
 {
     public async Task<PagedResult<ProductoListItemDto>> GetProductosAsync(
         CatalogoQuery query, CancellationToken cancellationToken = default)
@@ -18,7 +18,19 @@ public sealed class HttpCatalogoService(HttpClient http) : ICatalogoService
         var resultado = await http.GetFromJsonAsync<PagedResult<ProductoListItemDto>>(
             ConstruirUrl("api/productos", query), cancellationToken);
 
-        return resultado ?? new PagedResult<ProductoListItemDto>();
+        if (resultado is null)
+        {
+            return new PagedResult<ProductoListItemDto>();
+        }
+
+        // Las imágenes se guardan como ruta relativa (/img/…): según el host
+        // se resuelven contra la API (Web) o el origin local (MAUI).
+        foreach (var item in resultado.Items)
+        {
+            item.UrlImagen = assets.Resolver(item.UrlImagen);
+        }
+
+        return resultado;
     }
 
     public async Task<ProductoDetalleDto?> GetProductoAsync(
@@ -31,7 +43,17 @@ public sealed class HttpCatalogoService(HttpClient http) : ICatalogoService
         }
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<ProductoDetalleDto>(cancellationToken);
+        var producto = await response.Content.ReadFromJsonAsync<ProductoDetalleDto>(cancellationToken);
+
+        if (producto is not null)
+        {
+            foreach (var imagen in producto.Imagenes)
+            {
+                imagen.UrlImagen = assets.Resolver(imagen.UrlImagen)!;
+            }
+        }
+
+        return producto;
     }
 
     public async Task<IReadOnlyList<CategoriaDto>> GetCategoriasAsync(

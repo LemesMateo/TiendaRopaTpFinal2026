@@ -1,0 +1,66 @@
+/* Panel administrativo — tokens Velvet Rose. */
+
+.admin-cards {
+    display: grid;
+    gap: var(--vr-space-4);
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    margin-bottom: var(--vr-space-6);
+}
+
+.admin-card {
+    display: grid;
+    gap: var(--vr-space-2);
+    justify-items: start;
+    padding: var(--vr-space-5);
+    background: var(--vr-surface);
+    border: 1px solid var(--vr-border);
+    border-radius: var(--vr-radius-md);
+    box-shadow: var(--vr-shadow-sm);
+    text-decoration: none;
+    color: var(--vr-plum);
+    transition: border-color var(--vr-dur-fast) var(--vr-ease), transform var(--vr-dur-fast) var(--vr-ease);
+}
+
+.admin-card:hover,
+.admin-card:focus-visible {
+    border-color: var(--vr-primary);
+    transform: translateY(-2px);
+}
+
+.admin-card__title {
+    font-weight: 700;
+    color: var(--vr-plum-strong);
+    font-size: var(--vr-fs-md);
+}
+
+.admin-card__desc {
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text-muted);
+    line-height: var(--vr-lh-snug);
+}
+
+.admin-stats {
+    display: grid;
+    gap: var(--vr-space-3);
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.admin-stat {
+    background: var(--vr-lavender);
+    border-radius: var(--vr-radius-md);
+    padding: var(--vr-space-4);
+    display: grid;
+    gap: var(--vr-space-1);
+}
+
+.admin-stat__value {
+    font-family: var(--vr-font-display);
+    font-size: var(--vr-fs-xl);
+    font-weight: 700;
+    color: var(--vr-lavender-text);
+}
+
+.admin-stat__label {
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-lavender-text);
+}

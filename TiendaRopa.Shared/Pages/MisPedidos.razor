@@ -1,0 +1,262 @@
+@page "/mis-pedidos"
+@using TiendaRopa.Contracts.Pedidos
+@using TiendaRopa.Shared.Services
+@inject IPedidoService PedidosApi
+@inject SesionService Sesion
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>Mis Pedidos — Velvet Rose Boutique</PageTitle>
+
+@* Mis Pedidos (mockup 07_mis_pedidos.png).
+   El usuario se resuelve desde el JWT en backend: aquí SÓLO se piden los
+   pedidos propios (GET /api/pedidos), nunca se envía un IdCliente. *@
+
+<header class="page-head">
+    <h1>Mis Pedidos</h1>
+    <p class="page-sub">Seguí el estado de tus compras.</p>
+</header>
+
+@if (!sesionCargada)
+{
+    <LoadingState Text="Verificando tu sesión..." />
+}
+else if (!Sesion.Iniciada)
+{
+    <EmptyState Icon="lock"
+                 Title="Iniciá sesión para ver tus pedidos"
+                 Description="Tus pedidos se muestran asociados a tu cuenta.">
+        <AppButton Variant="primary" Icon="login" Href="/login?redirect=/mis-pedidos">
+            Iniciar sesión
+        </AppButton>
+    </EmptyState>
+}
+else if (cargando)
+{
+    <LoadingState Text="Cargando tus pedidos..." />
+}
+else if (error is not null)
+{
+    <EmptyState Icon="cloud_off"
+                 Title="No pudimos cargar tus pedidos"
+                 Description="@error">
+        <AppButton Variant="outline" Icon="refresh" OnClick="CargarAsync">
+            Reintentar
+        </AppButton>
+    </EmptyState>
+}
+else if (pedidos.Count == 0)
+{
+    <EmptyState Icon="receipt_long"
+                 Title="Todavía no tenés pedidos"
+                 Description="Cuando confirmes tu primera compra vas a ver acá su estado.">
+        <AppButton Variant="primary" Icon="storefront" Href="/catalogo">
+            Explorar catálogo
+        </AppButton>
+    </EmptyState>
+}
+else
+{
+    @if (pedidoNuevo is not null)
+    {
+        <p class="mp-confirm" role="status">
+            <AppIcon Icon="check_circle" Size="18" />
+            ¡Pedido #@pedidoNuevo confirmado! Descontamos el stock y te lo mostramos abajo.
+        </p>
+    }
+
+    <ul class="mp-list">
+        @foreach (var pedido in pedidos)
+        {
+            <li class="mp-card">
+                <div class="mp-card__head">
+                    <div>
+                        <p class="mp-card__id">Pedido #@pedido.Id</p>
+                        <p class="mp-card__date">@pedido.FechaPedido.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                    </div>
+                    <StatusBadge Text="@pedido.Estado" Tone="@TonoEstado(pedido.Estado)" />
+                </div>
+
+                <ul class="mp-card__items">
+                    @foreach (var detalle in pedido.Detalles)
+                    {
+                        <li class="mp-card__item">
+                            <div class="mp-card__item-media">
+                                @if (!string.IsNullOrWhiteSpace(detalle.UrlImagen))
+                                {
+                                    <img src="@detalle.UrlImagen" alt="@detalle.Producto" />
+                                }
+                                else
+                                {
+                                    <div class="mp-card__item-placeholder" aria-hidden="true">
+                                        <AppIcon Icon="checkroom" Size="20" />
+                                    </div>
+                                }
+                            </div>
+                            <div class="mp-card__item-body">
+                                <p class="mp-card__item-name">@detalle.Producto</p>
+                                <p class="mp-card__item-meta">
+                                    Talle @detalle.Talle · Color @detalle.Color · ×@detalle.Cantidad
+                                </p>
+                            </div>
+                            <p class="mp-card__item-price">
+                                @Services.CatalogoPresentation.FormatearPrecio(detalle.Subtotal)
+                            </p>
+                        </li>
+                    }
+                </ul>
+
+                <div class="mp-card__foot">
+                    <p class="mp-card__total">
+                        Total <strong>@Services.CatalogoPresentation.FormatearPrecio(pedido.Total)</strong>
+                    </p>
+                    @if (pedido.PermiteCancelacion && abriendo != pedido.Id)
+                    {
+                        <button type="button"
+                                class="mp-card__cancel"
+                                @onclick="(() => ConfirmarCancelacion(pedido.Id))">
+                            Cancelar pedido
+                        </button>
+                    }
+                </div>
+
+                @if (confirmarId == pedido.Id)
+                {
+                    <div class="mp-card__confirm" role="alertdialog"
+                         aria-label="@($"Confirmar cancelación del pedido {pedido.Id}")">
+                        <p>¿Cancelás el pedido #@pedido.Id? Se restituirá el stock de las prendas.</p>
+                        <div class="mp-card__confirm-actions">
+                            <AppButton Variant="outline" Size="sm" OnClick="(() => confirmarId = null)">
+                                No, volver
+                            </AppButton>
+                            <AppButton Variant="primary" Size="sm" Disabled="abriendo == pedido.Id"
+                                       OnClick="(() => CancelarAsync(pedido.Id))">
+                                @(abriendo == pedido.Id ? "Cancelando…" : "Sí, cancelar")
+                            </AppButton>
+                        </div>
+                    </div>
+                }
+
+                @if (mensaje is not null && mensajeId == pedido.Id)
+                {
+                    <p class="mp-card__error" role="alert">@mensaje</p>
+                }
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private List<PedidoDto> pedidos = [];
+    private bool sesionCargada;
+    private bool cargando = true;
+    private string? error;
+    private int? confirmarId;
+    private int? abriendo;
+    private string? mensaje;
+    private int? mensajeId;
+    private int? pedidoNuevo;
+
+    /// <summary>Pedido recién creado (parámetro de confirmación).</summary>
+    [SupplyParameterFromQuery(Name = "nuevo")]
+    public int? NuevoPedido { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Sesion.Cambio += OnSesionCambiada;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!sesionCargada)
+        {
+            await Sesion.CargarAsync();
+            sesionCargada = true;
+
+            if (NuevoPedido is { } id)
+            {
+                pedidoNuevo = id;
+            }
+
+            StateHasChanged();
+
+            if (Sesion.Iniciada)
+            {
+                await CargarAsync();
+            }
+        }
+    }
+
+    private void OnSesionCambiada() => InvokeAsync(StateHasChanged);
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+
+        try
+        {
+            pedidos = (await PedidosApi.GetMisPedidosAsync()).ToList();
+        }
+        catch (Exception)
+        {
+            pedidos = [];
+            error = "No pudimos conectar con la tienda. Intentá nuevamente en unos segundos.";
+        }
+        finally
+        {
+            cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ConfirmarCancelacion(int id)
+    {
+        mensaje = null;
+        confirmarId = id;
+    }
+
+    private async Task CancelarAsync(int id)
+    {
+        abriendo = id;
+        mensaje = null;
+        StateHasChanged();
+
+        try
+        {
+            var cancelado = await PedidosApi.CancelarPedidoAsync(id);
+            if (cancelado is null)
+            {
+                mensajeId = id;
+                mensaje = (PedidosApi as HttpPedidoService)?.UltimoError
+                    ?? "No se pudo cancelar el pedido.";
+            }
+            else
+            {
+                confirmarId = null;
+                await CargarAsync();
+            }
+        }
+        catch (Exception)
+        {
+            mensajeId = id;
+            mensaje = "Ocurrió un error al cancelar. Intentá nuevamente.";
+        }
+        finally
+        {
+            abriendo = null;
+        }
+    }
+
+    private static string TonoEstado(string estado) => estado switch
+    {
+        "Pendiente" => "warning",
+        "Confirmado" => "info",
+        "Preparado" => "primary",
+        "Entregado" => "success",
+        "Cancelado" => "danger",
+        _ => "neutral",
+    };
+
+    public void Dispose() => Sesion.Cambio -= OnSesionCambiada;
+}

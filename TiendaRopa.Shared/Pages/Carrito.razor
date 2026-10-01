@@ -1,19 +1,240 @@
 @page "/carrito"
+@using TiendaRopa.Contracts.Pedidos
+@using TiendaRopa.Shared.Services
+@inject CarritoService CarritoSvc
+@inject IPedidoService PedidosApi
+@inject SesionService Sesion
+@inject NavigationManager Navigation
+@implements IDisposable
 
 <PageTitle>Carrito — Velvet Rose Boutique</PageTitle>
 
-@* Carrito (mockup 06_carrito.png). Por ahora sólo el estado vacío:
-   no existe carrito real hasta que haya API y estado de sesión. *@
+@* Carrito real (mockup 06_carrito.png).
+   Todo el estado vive en CarritoService (persistido en el cliente):
+   agregar/quitar cantidades NO modifica stock en SQL Server; la validación
+   definitiva ocurre al confirmar el pedido (transacción en la API). *@
 
 <header class="page-head">
     <h1>Carrito</h1>
     <p class="page-sub">Revisá tus productos antes de continuar.</p>
 </header>
 
-<EmptyState Icon="shopping_cart"
-             Title="Tu carrito está vacío"
-             Description="Todavía no agregaste prendas. Explorá el catálogo y encontrá tus favoritas.">
-    <AppButton Variant="primary" Icon="storefront" Href="/catalogo">
-        Explorar catálogo
-    </AppButton>
-</EmptyState>
+@if (!inicializado)
+{
+    <LoadingState Text="Cargando carrito..." />
+}
+else if (CarritoSvc.Items.Count == 0)
+{
+    <EmptyState Icon="shopping_cart"
+                 Title="Tu carrito está vacío"
+                 Description="Todavía no agregaste prendas. Explorá el catálogo y encontrá tus favoritas.">
+        <AppButton Variant="primary" Icon="storefront" Href="/catalogo">
+            Explorar catálogo
+        </AppButton>
+    </EmptyState>
+}
+else
+{
+    <div class="cart-layout">
+        <ul class="cart-list">
+            @foreach (var item in CarritoSvc.Items)
+            {
+                <li class="cart-item">
+                    <div class="cart-item__media">
+                        @if (!string.IsNullOrWhiteSpace(item.Imagen))
+                        {
+                            <img src="@item.Imagen" alt="@item.Nombre" />
+                        }
+                        else
+                        {
+                            <div class="cart-item__placeholder" aria-hidden="true">
+                                <AppIcon Icon="checkroom" Size="28" />
+                            </div>
+                        }
+                    </div>
+
+                    <div class="cart-item__body">
+                        <div class="cart-item__top">
+                            <div>
+                                <p class="cart-item__name">@item.Nombre</p>
+                                <p class="cart-item__meta">Talle @item.Talle · Color @item.Color</p>
+                            </div>
+                            <button type="button"
+                                    class="cart-item__remove"
+                                    aria-label="@($"Quitar {item.Nombre} del carrito")"
+                                    @onclick="(() => QuitarAsync(item.IdProductoVariante))">
+                                <AppIcon Icon="delete" Size="20" />
+                            </button>
+                        </div>
+
+                        <div class="cart-item__bottom">
+                            <div class="stepper" role="group" aria-label="@($"Cantidad de {item.Nombre}")">
+                                <button type="button"
+                                        class="stepper__btn"
+                                        aria-label="Disminuir cantidad"
+                                        @onclick="(() => CambiarCantidadAsync(item.IdProductoVariante, item.Cantidad - 1))">
+                                    <AppIcon Icon="remove" Size="18" />
+                                </button>
+                                <span class="stepper__value" aria-live="polite">@item.Cantidad</span>
+                                <button type="button"
+                                        class="stepper__btn"
+                                        aria-label="Aumentar cantidad"
+                                        @onclick="(() => CambiarCantidadAsync(item.IdProductoVariante, item.Cantidad + 1))">
+                                    <AppIcon Icon="add" Size="18" />
+                                </button>
+                            </div>
+                            <p class="cart-item__price">
+                                <span class="cart-item__price-unit">
+                                    @Services.CatalogoPresentation.FormatearPrecio(item.PrecioUnitario) c/u
+                                </span>
+                                <strong>@Services.CatalogoPresentation.FormatearPrecio(item.Subtotal)</strong>
+                            </p>
+                        </div>
+                    </div>
+                </li>
+            }
+        </ul>
+
+        <aside class="cart-summary" aria-labelledby="cart-summary-title">
+            <h2 class="cart-summary__title" id="cart-summary-title">Resumen</h2>
+
+            <dl class="cart-summary__rows">
+                <div class="cart-summary__row">
+                    <dt>Productos (@CarritoSvc.CantidadTotal)</dt>
+                    <dd>@Services.CatalogoPresentation.FormatearPrecio(CarritoSvc.Total)</dd>
+                </div>
+                <div class="cart-summary__row">
+                    <dt>Envío</dt>
+                    <dd>A coordinar</dd>
+                </div>
+                <div class="cart-summary__row cart-summary__row--total">
+                    <dt>Total</dt>
+                    <dd>@Services.CatalogoPresentation.FormatearPrecio(CarritoSvc.Total)</dd>
+                </div>
+            </dl>
+
+            @if (mensaje is not null)
+            {
+                <p class="cart-summary__notice @(esError ? "is-error" : "")" role="alert">@mensaje</p>
+            }
+
+            <AppButton Variant="primary"
+                       FullWidth
+                       Icon="lock"
+                       Disabled="confirmando"
+                       OnClick="ConfirmarAsync">
+                @(confirmando ? "Confirmando pedido…" : "Confirmar pedido")
+            </AppButton>
+
+            <p class="cart-summary__hint">
+                <AppIcon Icon="info" Size="14" />
+                El stock se valida y descuenta recién al confirmar, dentro de una transacción.
+            </p>
+
+            <AppButton Variant="ghost" Icon="arrow_back" Href="/catalogo">
+                Seguir comprando
+            </AppButton>
+        </aside>
+    </div>
+}
+
+@code {
+    private bool inicializado;
+    private bool confirmando;
+    private string? mensaje;
+    private bool esError;
+
+    protected override void OnInitialized()
+    {
+        CarritoSvc.Cambio += OnCarritoCambiado;
+        Sesion.Cambio += OnSesionCambiada;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!inicializado)
+        {
+            await CarritoSvc.InicializarAsync();
+            await Sesion.CargarAsync();
+            inicializado = true;
+            StateHasChanged();
+        }
+    }
+
+    private void OnCarritoCambiado() => InvokeAsync(StateHasChanged);
+
+    private void OnSesionCambiada() => InvokeAsync(StateHasChanged);
+
+    private async Task QuitarAsync(int idVariante)
+    {
+        mensaje = null;
+        await CarritoSvc.QuitarAsync(idVariante);
+    }
+
+    private async Task CambiarCantidadAsync(int idVariante, int cantidad)
+    {
+        mensaje = null;
+        await CarritoSvc.CambiarCantidadAsync(idVariante, cantidad);
+    }
+
+    private async Task ConfirmarAsync()
+    {
+        mensaje = null;
+        esError = false;
+
+        if (CarritoSvc.Items.Count == 0)
+        {
+            return;
+        }
+
+        if (!Sesion.Iniciada)
+        {
+            // El carrito ya quedó persistido en el cliente: sólo falta la sesión.
+            Navigation.NavigateTo("/login?redirect=/carrito");
+            return;
+        }
+
+        confirmando = true;
+
+        try
+        {
+            var pedido = await PedidosApi.CrearPedidoAsync(new CrearPedidoRequest
+            {
+                Items = CarritoSvc.Items
+                    .Select(i => new ItemPedidoRequest
+                    {
+                        IdProductoVariante = i.IdProductoVariante,
+                        Cantidad = i.Cantidad,
+                    })
+                    .ToList(),
+            });
+
+            if (pedido is null)
+            {
+                // 409 de stock u otro rechazo del backend: el carrito se conserva.
+                mensaje = (PedidosApi as HttpPedidoService)?.UltimoError
+                    ?? "No pudimos confirmar el pedido. Revisá la disponibilidad de las prendas.";
+                esError = true;
+                return;
+            }
+
+            await CarritoSvc.VaciarAsync();
+            Navigation.NavigateTo($"/mis-pedidos?nuevo={pedido.Id}");
+        }
+        catch (Exception)
+        {
+            mensaje = "Ocurrió un error al confirmar el pedido. Tu carrito se mantiene intacto.";
+            esError = true;
+        }
+        finally
+        {
+            confirmando = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        CarritoSvc.Cambio -= OnCarritoCambiado;
+        Sesion.Cambio -= OnSesionCambiada;
+    }
+}
