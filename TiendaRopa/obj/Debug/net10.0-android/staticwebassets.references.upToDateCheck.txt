@@ -1,4 +1,0 @@
-C:\Users\mateo\source\repos\TiendaRopa\TiendaRopa.Shared\obj\Debug\net10.0\staticwebassets.build.json
-C:\Users\mateo\source\repos\TiendaRopa\TiendaRopa.Shared\obj\Debug\net10.0\staticwebassets.build.json
-C:\Users\mateo\source\repos\TiendaRopa\TiendaRopa.Shared\obj\Debug\net10.0\staticwebassets.build.json
-C:\Users\mateo\source\repos\TiendaRopa\TiendaRopa.Shared\obj\Debug\net10.0\staticwebassets.build.json

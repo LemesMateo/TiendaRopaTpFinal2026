@@ -1,0 +1,90 @@
+# =====================================================================
+# Velvet Rose Boutique — TiendaRopa
+# =====================================================================
+
+# --- Evidencias de pruebas Android (capturas, logcat, eventos) --------
+# Generadas por scripts/android-emulator.ps1 y scripts/adb-evidence.ps1
+# Nunca deben versionarse: contienen capturas de pantalla grandes y
+# logs de dispositivo con datos de sesión.
+artifacts/
+test-evidence/
+
+# --- .NET / compilación (bin, obj de TODOS los proyectos) ------------
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+*.dll
+*.exe
+*.pdb
+*.cache
+*.log
+*.trx
+*.ilk
+*.tmp
+
+# Resultados de build de la solución
+[Bb]uild/
+[Bb]uild[Ll]og.*
+[Ll]og/
+[Ll]ogs/
+
+# --- NuGet -----------------------------------------------
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+project.lock.json
+project.fragment.lock.json
+
+# --- IDE (VS, Rider, VS Code) ------------------------------
+.vs/
+.idea/
+*.user
+*.suo
+*.rsuser
+*.swp
+*~
+*.userosscache
+*.sln.docstates
+
+# --- VS Code (opcional: se versiona settings de MAUI) ---
+# .vscode/settings.json
+
+# --- Rider ---
+_ReSharper*/
+*.DotSettings.user
+
+# --- Test Results ---
+TestResults/
+*.TestResult.xml
+benchmark*.json
+
+# --- Publish / despliegue ---
+publish/
+*.publishsettings
+PublishScripts/
+
+# --- MAUI / Android ---
+*.apk
+*.aab
+*.keystore
+*.apks
+Resources/Android/**/values/strings.xml
+
+# --- Certificados y secretos (NUNCA versionar) ---
+*.pfx
+*.p12
+*.key
+*.cer
+*.pem
+appsettings.*.local.json
+secrets.json
+.env
+.env.*
+
+# --- Sistema operativo ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+._*

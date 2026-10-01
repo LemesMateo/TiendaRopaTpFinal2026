@@ -1,29 +1,33 @@
 @page "/catalogo"
-@using TiendaRopa.Shared.Models
-@using TiendaRopa.Shared.Samples
+@using TiendaRopa.Contracts.Catalogo
+@using TiendaRopa.Shared.Services
+@inject ICatalogoService CatalogoApi
+@implements IDisposable
 
 <PageTitle>Catálogo — Velvet Rose Boutique</PageTitle>
 
 @* Catálogo con búsqueda y filtros (mockup 04_catalogo_filtros.png).
-   Filtrado local sobre datos de muestra: sin llamadas a servicios. *@
+   Los filtros se envían a la API; el diseño y el comportamiento se conservan. *@
 
 <header class="cat-head">
     <h1>Catálogo</h1>
 </header>
 
-<SearchBar @bind-Value="query"
+<SearchBar Value="@query"
+           ValueChanged="OnBuscarTexto"
            Placeholder="Buscar productos..."
            Label="Buscar productos por nombre o categoría" />
 
 <nav class="vr-chip-row cat-cats" aria-label="Filtrar por categoría">
     <FilterChip Text="Todas"
                 Selected="@(category is null)"
-                OnSelected="@(() => SetCategory(null))" />
-    @foreach (var cat in SampleCatalog.Categories)
+                OnSelected="@(() => SetCategoryAsync(null))" />
+    @foreach (var dto in categorias)
     {
-        <FilterChip Text="@cat"
-                    Selected="@(category == cat)"
-                    OnSelected="@(() => SetCategory(cat))" />
+        var nombre = dto.Nombre;
+        <FilterChip Text="@nombre"
+                    Selected="@(category == nombre)"
+                    OnSelected="@(() => SetCategoryAsync(nombre))" />
     }
 </nav>
 
@@ -33,14 +37,14 @@
             <AppIcon Icon="straighten" Size="18" />
             Talle
         </span>
-        <select @bind="size" aria-label="Filtrar por talle">
+        <select @bind="size" @bind:after="RefrescarAsync" aria-label="Filtrar por talle">
             <option value="">Todos</option>
-            @foreach (var s in SampleCatalog.Sizes)
+            @foreach (var s in Talles)
             {
                 <option value="@s">@s</option>
             }
         </select>
-        <AppIcon Icon="expand_more" Size="18" Class="cat-select__chevron" />
+        <AppIcon Icon="expand_more" Size="18" />
     </label>
 
     <label class="cat-select">
@@ -48,14 +52,14 @@
             <AppIcon Icon="palette" Size="18" />
             Color
         </span>
-        <select @bind="color" aria-label="Filtrar por color">
+        <select @bind="color" @bind:after="RefrescarAsync" aria-label="Filtrar por color">
             <option value="">Todos</option>
-            @foreach (var c in SampleCatalog.Colors)
+            @foreach (var c in Colores)
             {
                 <option value="@c">@c</option>
             }
         </select>
-        <AppIcon Icon="expand_more" Size="18" Class="cat-select__chevron" />
+        <AppIcon Icon="expand_more" Size="18" />
     </label>
 
     <label class="cat-select">
@@ -63,51 +67,71 @@
             <AppIcon Icon="sell" Size="18" />
             Precio
         </span>
-        <select @bind="priceBand" aria-label="Filtrar por rango de precio">
+        <select @bind="priceBand" @bind:after="RefrescarAsync" aria-label="Filtrar por rango de precio">
             <option value="">Todos</option>
             <option value="upto30">Hasta $30.000</option>
             <option value="30to60">$30.000 – $60.000</option>
             <option value="over60">Más de $60.000</option>
         </select>
-        <AppIcon Icon="expand_more" Size="18" Class="cat-select__chevron" />
+        <AppIcon Icon="expand_more" Size="18" />
     </label>
 </div>
 
 <div class="cat-toolbar">
     <p class="cat-count" role="status">
-        @Filtered.Count @(Filtered.Count == 1 ? "producto" : "productos")
+        @if (resultado is not null)
+        {
+            @($"{resultado.TotalItems} {(resultado.TotalItems == 1 ? "producto" : "productos")}")
+        }
+        else
+        {
+            <text>Cargando productos…</text>
+        }
     </p>
     <label class="cat-sort">
         <span class="cat-sort__label">Ordenar</span>
-        <select @bind="sort" aria-label="Ordenar resultados">
+        <select @bind="sort" @bind:after="RefrescarAsync" aria-label="Ordenar resultados">
             <option value="relevancia">Relevancia</option>
             <option value="precio-asc">Precio: menor a mayor</option>
             <option value="precio-desc">Precio: mayor a menor</option>
             <option value="nombre">Nombre (A–Z)</option>
         </select>
-        <AppIcon Icon="expand_more" Size="18" Class="cat-select__chevron" />
+        <AppIcon Icon="expand_more" Size="18" />
     </label>
 </div>
 
-@if (Filtered.Count == 0)
+@if (error is not null)
+{
+    <EmptyState Icon="cloud_off"
+                 Title="No pudimos cargar el catálogo"
+                 Description="@error">
+        <AppButton Variant="outline" Icon="refresh" OnClick="RefrescarAsync">
+            Reintentar
+        </AppButton>
+    </EmptyState>
+}
+else if (cargando && resultado is null)
+{
+    <LoadingState Text="Cargando productos..." />
+}
+else if (resultado is not null && tarjetas.Count == 0)
 {
     <EmptyState Icon="search_off"
                  Title="Sin resultados"
                  Description="No encontramos prendas con esos filtros. Probá con otros términos o limpiá la búsqueda.">
-        <AppButton Variant="outline" Icon="filter_alt_off" OnClick="ClearFilters">
+        <AppButton Variant="outline" Icon="filter_alt_off" OnClick="ClearFiltersAsync">
             Limpiar filtros
         </AppButton>
     </EmptyState>
 }
-else
+else if (resultado is not null)
 {
     <div class="vr-product-grid cat-grid">
-        @foreach (var product in Filtered)
+        @foreach (var product in tarjetas)
         {
             <ProductCard Name="@product.Name"
                          Category="@product.Category"
                          Price="@product.Price"
-                         OriginalPrice="@product.OriginalPrice"
                          Badge="@product.Badge"
                          BadgeTone="@product.BadgeTone"
                          ImageUrl="@product.ImageUrl" />
@@ -116,6 +140,9 @@ else
 }
 
 @code {
+    private static readonly string[] Talles = ["S", "M", "L", "XL"];
+    private static readonly string[] Colores = ["Rosa", "Negro", "Marfil", "Ciruela"];
+
     private string? query;
     private string? category;
     private string size = string.Empty;
@@ -123,70 +150,134 @@ else
     private string priceBand = string.Empty;
     private string sort = "relevancia";
 
+    private bool cargando = true;
+    private string? error;
+    private Contracts.Common.PagedResult<ProductoListItemDto>? resultado;
+    private List<Models.ProductCardItem> tarjetas = [];
+
+    private IReadOnlyList<CategoriaDto> categorias = [];
+    private bool categoriasCargadas;
+
+    private CancellationTokenSource? busquedaCts;
+
     /// <summary>Categoría precargada desde el enlace de Inicio (?cat=...).</summary>
     [SupplyParameterFromQuery(Name = "cat")]
     public string? CategoryQuery { get; set; }
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         if (!string.IsNullOrWhiteSpace(CategoryQuery))
         {
-            category = SampleCatalog.Categories
-                .FirstOrDefault(c => string.Equals(c, CategoryQuery, StringComparison.OrdinalIgnoreCase));
+            category = CategoryQuery;
         }
-    }
 
-    private List<ProductCardItem> Filtered
-    {
-        get
+        if (!categoriasCargadas)
         {
-            var result = SampleCatalog.Products.AsEnumerable();
-
-            if (!string.IsNullOrWhiteSpace(query))
+            try
             {
-                result = result.Where(p =>
-                    p.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                    p.Category.Contains(query, StringComparison.OrdinalIgnoreCase));
+                categorias = await CatalogoApi.GetCategoriasAsync();
+                categoriasCargadas = categorias.Count > 0;
+            }
+            catch (Exception)
+            {
+                categorias = [];
+            }
+        }
+
+        await ProgramarBusquedaAsync();
+    }
+
+    private Task OnBuscarTexto(string valor)
+    {
+        query = valor;
+        // Pequeña pausa para no consultar la API en cada tecla.
+        return ProgramarBusquedaAsync(350);
+    }
+
+    private Task SetCategoryAsync(string? value)
+    {
+        category = value;
+        return ProgramarBusquedaAsync();
+    }
+
+    private Task RefrescarAsync() => ProgramarBusquedaAsync();
+
+    private async Task ProgramarBusquedaAsync(int retardoMs = 0)
+    {
+        busquedaCts?.Cancel();
+        busquedaCts?.Dispose();
+        var cts = new CancellationTokenSource();
+        busquedaCts = cts;
+
+        try
+        {
+            if (retardoMs > 0)
+            {
+                await Task.Delay(retardoMs, cts.Token);
             }
 
-            if (!string.IsNullOrWhiteSpace(category))
-            {
-                result = result.Where(p => p.Category == category);
-            }
-
-            if (!string.IsNullOrWhiteSpace(size))
-            {
-                result = result.Where(p => p.Sizes.Contains(size));
-            }
-
-            if (!string.IsNullOrWhiteSpace(color))
-            {
-                result = result.Where(p => p.Colors.Contains(color));
-            }
-
-            result = priceBand switch
-            {
-                "upto30" => result.Where(p => p.SortPrice <= 30_000),
-                "30to60" => result.Where(p => p.SortPrice > 30_000 && p.SortPrice <= 60_000),
-                "over60" => result.Where(p => p.SortPrice > 60_000),
-                _ => result,
-            };
-
-            IEnumerable<ProductCardItem> ordered = sort switch
-            {
-                "precio-asc" => result.OrderBy(p => p.SortPrice),
-                "precio-desc" => result.OrderByDescending(p => p.SortPrice),
-                "nombre" => result.OrderBy(p => p.Name, StringComparer.CurrentCulture),
-                _ => result,
-            };
-
-            return ordered.ToList();
+            await EjecutarBusquedaAsync(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Llegó una búsqueda más reciente: se descarta esta.
         }
     }
 
-    private void SetCategory(string? value) => category = value;
+    private async Task EjecutarBusquedaAsync(CancellationToken cancellationToken)
+    {
+        cargando = true;
+        error = null;
 
-    private void ClearFilters()
+        try
+        {
+            resultado = await CatalogoApi.GetProductosAsync(CrearConsulta(), cancellationToken);
+            tarjetas = resultado.Items.Select(i => i.ToCardItem()).ToList();
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (Exception)
+        {
+            resultado = null;
+            tarjetas = [];
+            error = "No pudimos conectar con la API. Revisá que esté corriendo " +
+                    "en http://localhost:5100 e intentá de nuevo.";
+        }
+        finally
+        {
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                cargando = false;
+            }
+        }
+    }
+
+    private CatalogoQuery CrearConsulta() => new()
+    {
+        Page = 1,
+        PageSize = 24,
+        Categoria = category,
+        Buscar = query,
+        Talle = string.IsNullOrWhiteSpace(size) ? null : size,
+        Color = string.IsNullOrWhiteSpace(color) ? null : color,
+        PrecioMin = priceBand switch
+        {
+            "30to60" => 30_000m,
+            "over60" => 60_000.01m,
+            _ => null,
+        },
+        PrecioMax = priceBand switch
+        {
+            "upto30" => 30_000m,
+            "30to60" => 60_000m,
+            _ => null,
+        },
+        Orden = sort,
+    };
+
+    private async Task ClearFiltersAsync()
     {
         query = null;
         category = null;
@@ -194,5 +285,12 @@ else
         color = string.Empty;
         priceBand = string.Empty;
         sort = "relevancia";
+        await ProgramarBusquedaAsync();
+    }
+
+    public void Dispose()
+    {
+        busquedaCts?.Cancel();
+        busquedaCts?.Dispose();
     }
 }

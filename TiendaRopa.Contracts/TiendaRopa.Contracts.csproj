@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>TiendaRopa.Contracts</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Biblioteca independiente: sin dependencias de UI ni de EF.
+       Referenciada por TiendaRopa.Api, TiendaRopa.Shared (Web y MAUI). -->
+
+</Project>

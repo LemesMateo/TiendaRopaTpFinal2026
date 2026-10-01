@@ -1,0 +1,28 @@
+{
+  // ------------------------------------------------------------------
+  // .NET MAUI (extensión ms-dotnettools.dotnet-maui) — Velvet Rose
+  //
+  // Reutiliza el Android SDK y el JDK que ya trae Visual Studio:
+  //   SDK  : C:\Program Files (x86)\Android\android-sdk   (adb 36.0.0,
+  //          emulator 35.5.10, cmdline-tools 12.0, android-35/36)
+  //   JDK  : C:\Program Files\Android\openjdk\jdk-21.0.8
+  //   AVDs : MAUI_Emulator_API_36, pixel_8_-_api_36_0,
+  //          pixel_9_pro_-_api_36_0
+  //
+  // Estas dos claves son las que la extensión usa como ruta preferida
+  // (selección manual del SDK), por delante de ANDROID_HOME. Si no se
+  // indican, la extensión toma ANDROID_HOME/ANDROID_SDK_ROOT del entorno.
+  // ------------------------------------------------------------------
+  "maui.configuration.androidSdkPreferredPath": "C:\\Program Files (x86)\\Android\\android-sdk",
+  "maui.configuration.javaSdkPreferredPath": "C:\\Program Files\\Android\\openjdk\\jdk-21.0.8",
+
+  // Proyecto de arranque al pulsar F5 en la solución.
+  "maui.configuration.useLaunchJsonConfigurations": 0,
+
+  // Verbosidad: mínima en depuración para no inundar el panel Debug Console.
+  "maui.configuration.debugVerbosity": "minimal",
+
+  // Cuerpo de trabajo de Android ya instalado vía Visual Studio
+  // (android 36.1.69/10.0.100) — no se vuelve a instalar.
+  "dotnet.defaultSolution": "TiendaRopa.slnx"
+}

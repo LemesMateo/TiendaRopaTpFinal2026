@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\buildMultiTargeting\TiendaRopa.Shared.props" />
-</Project>

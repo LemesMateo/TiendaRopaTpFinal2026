@@ -1,9 +1,12 @@
 ﻿@page "/"
-@using TiendaRopa.Shared.Samples
+@using TiendaRopa.Contracts.Catalogo
+@using TiendaRopa.Shared.Services
+@inject ICatalogoService Catalogo
 
 <PageTitle>Inicio — Velvet Rose Boutique</PageTitle>
 
-@* Inicio cliente (mockup 03_inicio_cliente.png) *@
+@* Inicio cliente (mockup 03_inicio_cliente.png).
+   Categorías y novedades se cargan desde la API; el diseño no cambia. *@
 
 <section class="home-hero" aria-labelledby="home-greeting">
     <div class="home-hero__text">
@@ -15,58 +18,117 @@
     </a>
 </section>
 
-<nav class="vr-chip-row home-cats" aria-label="Categorías destacadas">
-    @foreach (var cat in SampleCatalog.Categories)
-    {
-        <a class="vr-chip home-cat" href="@CategoryHref(cat)">@cat</a>
-    }
-</nav>
-
-<section class="home-banner" aria-labelledby="home-banner-title">
-    <div class="home-banner__content">
-        <p class="home-banner__eyebrow">Nueva Colección Primavera</p>
-        <h2 id="home-banner-title">Elegancia que florece</h2>
-        <p class="home-banner__tag">Tu estilo, tu poder.</p>
-        <a href="/catalogo" class="home-banner__cta">
-            Ver colección
-            <AppIcon Icon="arrow_forward" Size="18" />
-        </a>
-    </div>
-    <span class="home-banner__badge">HASTA 30% OFF</span>
-    <span class="home-banner__rose" aria-hidden="true">
-        <AppIcon Icon="local_florist" Size="170" Filled="true" />
-    </span>
-</section>
-
-<section class="home-news" aria-labelledby="home-news-title">
-    <div class="vr-section-head">
-        <h2 id="home-news-title">Novedades</h2>
-        <a href="/catalogo" class="vr-section-head__link">
-            Ver todas
-            <AppIcon Icon="chevron_right" Size="18" />
-        </a>
-    </div>
-
-    <div class="vr-product-grid">
-        @foreach (var product in SampleCatalog.Products.Take(4))
+@if (cargando)
+{
+    <LoadingState Text="Cargando novedades de la tienda..." />
+}
+else if (error is not null)
+{
+    <EmptyState Icon="cloud_off"
+                 Title="No pudimos cargar la tienda"
+                 Description="@error">
+        <AppButton Variant="outline" Icon="refresh" OnClick="CargarAsync">
+            Reintentar
+        </AppButton>
+    </EmptyState>
+}
+else
+{
+    <nav class="vr-chip-row home-cats" aria-label="Categorías destacadas">
+        @foreach (var cat in categorias)
         {
-            <ProductCard Name="@product.Name"
-                         Category="@product.Category"
-                         Price="@product.Price"
-                         OriginalPrice="@product.OriginalPrice"
-                         Badge="@product.Badge"
-                         BadgeTone="@product.BadgeTone"
-                         ImageUrl="@product.ImageUrl" />
+            <a class="vr-chip home-cat" href="@CategoryHref(cat.Nombre)">@cat.Nombre</a>
         }
-    </div>
+    </nav>
 
-    <p class="home-note">
-        <AppIcon Icon="info" Size="16" />
-        Vista previa visual: los productos y precios son de ejemplo hasta conectar la API.
-    </p>
-</section>
+    <section class="home-banner" aria-labelledby="home-banner-title">
+        <div class="home-banner__content">
+            <p class="home-banner__eyebrow">Nueva Colección Primavera</p>
+            <h2 id="home-banner-title">Elegancia que florece</h2>
+            <p class="home-banner__tag">Tu estilo, tu poder.</p>
+            <a href="/catalogo" class="home-banner__cta">
+                Ver colección
+                <AppIcon Icon="arrow_forward" Size="18" />
+            </a>
+        </div>
+        <span class="home-banner__badge">HASTA 30% OFF</span>
+        <span class="home-banner__rose" aria-hidden="true">
+            <AppIcon Icon="local_florist" Size="170" Filled="true" />
+        </span>
+    </section>
+
+    <section class="home-news" aria-labelledby="home-news-title">
+        <div class="vr-section-head">
+            <h2 id="home-news-title">Novedades</h2>
+            <a href="/catalogo" class="vr-section-head__link">
+                Ver todas
+                <AppIcon Icon="chevron_right" Size="18" />
+            </a>
+        </div>
+
+        @if (novedades.Count == 0)
+        {
+            <EmptyState Icon="checkroom"
+                         Title="Aún no hay productos publicados"
+                         Description="Cuando el administrador publique prendas, van a aparecer acá." />
+        }
+        else
+        {
+            <div class="vr-product-grid">
+                @foreach (var product in novedades)
+                {
+                    <ProductCard Name="@product.Name"
+                                 Category="@product.Category"
+                                 Price="@product.Price"
+                                 Badge="@product.Badge"
+                                 BadgeTone="@product.BadgeTone"
+                                 ImageUrl="@product.ImageUrl" />
+                }
+            </div>
+
+            <p class="home-note">
+                <AppIcon Icon="info" Size="16" />
+                Precios y stock provistos por la API de Velvet Rose.
+            </p>
+        }
+    </section>
+}
 
 @code {
+    private bool cargando = true;
+    private string? error;
+    private IReadOnlyList<CategoriaDto> categorias = [];
+    private List<Models.ProductCardItem> novedades = [];
+
+    protected override async Task OnInitializedAsync() => await CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+
+        try
+        {
+            // Ambas llamadas en paralelo (interactividad en servidor o MAUI).
+            var productosTask = Catalogo.GetProductosAsync(
+                new CatalogoQuery { Page = 1, PageSize = 4, Orden = "relevancia" });
+            var categoriasTask = Catalogo.GetCategoriasAsync();
+
+            var productos = await productosTask;
+            categorias = await categoriasTask;
+            novedades = productos.Items.Select(p => p.ToCardItem()).ToList();
+        }
+        catch (Exception)
+        {
+            error = "No pudimos conectar con la API. Revisá que esté corriendo " +
+                    "en http://localhost:5100 e intentá de nuevo.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
     private static string CategoryHref(string category)
         => $"/catalogo?cat={Uri.EscapeDataString(category)}";
 }

@@ -1,3 +1,5 @@
+using TiendaRopa.Contracts.Catalogo;
+using TiendaRopa.Shared.Services;
 using TiendaRopa.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -5,6 +7,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Cliente HTTP del catálogo. La UI se ejecuta en el servidor, por lo que
+// "localhost" alcanza la API en el mismo equipo (ver Api:BaseUrl en appsettings).
+var apiBaseUrl = builder.Configuration["Api:BaseUrl"] ?? "http://localhost:5100";
+builder.Services.AddSingleton<ICatalogoService>(_ =>
+    new HttpCatalogoService(new HttpClient { BaseAddress = new Uri(apiBaseUrl) }));
 
 var app = builder.Build();
 
