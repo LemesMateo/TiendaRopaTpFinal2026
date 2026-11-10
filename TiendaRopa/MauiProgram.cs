@@ -1,4 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
+#if MAUI_DEVFLOW
+using Microsoft.Maui.DevFlow.Agent;
+using Microsoft.Maui.DevFlow.Blazor;
+#endif
 using TiendaRopa.Contracts.Admin;
 using TiendaRopa.Contracts.Catalogo;
 using TiendaRopa.Contracts.Identidad;
@@ -32,6 +36,13 @@ namespace TiendaRopa
                 });
 
             builder.Services.AddMauiBlazorWebView();
+
+#if MAUI_DEVFLOW
+            // Instrumentación MauiDevFlow (sólo en builds con DevFlow):
+            // agente de inspección + tools CDP para el BlazorWebView.
+            builder.AddMauiDevFlowAgent();
+            builder.AddMauiBlazorDevFlowTools();
+#endif
 
             // Cliente HTTP único y de larga vida para la API del catálogo.
             // Un solo HttpClient también para las APIs autenticadas; el JWT se
