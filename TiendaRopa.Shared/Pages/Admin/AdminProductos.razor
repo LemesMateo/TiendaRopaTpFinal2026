@@ -1,5 +1,7 @@
 @page "/admin/productos"
 @using TiendaRopa.Contracts.Admin
+@using TiendaRopa.Contracts.Catalogo
+@using TiendaRopa.Shared.Models
 @using TiendaRopa.Shared.Services
 @inject IAdminService AdminApi
 @inject SesionService Sesion
@@ -96,6 +98,107 @@ else
                 </label>
             </div>
 
+            @* Imágenes: se administran debajo de la descripción y antes de las
+               variantes y las acciones finales. *@
+            <AdminImagenesEditor @bind-Imagenes="imagenesProducto" />
+
+            @if (editando.Id != 0 && productoEditado is not null)
+            {
+                @* Acordeón de variantes: queda entre los datos del producto y
+                   las acciones finales, para poder completarlo y guardar sin
+                   volver al principio del formulario. *@
+                <section class="admin-accordion @(variantesAbiertas ? "is-open" : null)">
+                    <button type="button"
+                            class="admin-accordion__header"
+                            id="variantes-header"
+                            aria-expanded="@(variantesAbiertas ? "true" : "false")"
+                            aria-controls="variantes-panel"
+                            @onclick="ToggleVariantes">
+                        <span class="admin-accordion__titulo">
+                            <AppIcon Icon="style" Size="20" />
+                            <span>Variantes</span>
+                        </span>
+                        <span class="admin-accordion__meta">
+                            <span class="admin-accordion__conteo">
+                                @(productoEditado.Variantes.Count == 1
+                                    ? "1 variante"
+                                    : $"{productoEditado.Variantes.Count} variantes")
+                            </span>
+                            <AppIcon Icon="expand_more" Size="24" Class="admin-accordion__chevron" />
+                        </span>
+                        @* Ayuda de escritorio (sólo al pasar el cursor); el
+                           nombre accesible del botón es "Variantes". *@
+                        <span class="admin-accordion__tooltip" aria-hidden="true">Administrar variantes</span>
+                    </button>
+
+                    <div class="admin-accordion__panel"
+                         id="variantes-panel"
+                         role="region"
+                         aria-labelledby="variantes-header">
+                        <div class="admin-variants">
+                            <h3 id="variants-title">Variantes (talle + color + stock + precio)</h3>
+
+                            <ul class="admin-variants__list">
+                                @foreach (var variante in productoEditado.Variantes)
+                                {
+                                    <li>
+                                        <span class="admin-variants__swatch" style="--swatch: @(variante.CodigoHex ?? "#CBD5CF")"></span>
+                                        <strong>@variante.Talle</strong> · @variante.Color
+                                        <span class="admin-variants__stock @(variante.Stock == 0 ? "is-empty" : variante.Stock <= 3 ? "is-low" : "")">
+                                            @($"stock {variante.Stock}")
+                                        </span>
+                                        <span class="admin-variants__price">
+                                            @(variante.Precio is { } p
+                                                ? Services.CatalogoPresentation.FormatearPrecio(p)
+                                                : "c/ precio base")
+                                        </span>
+                                    </li>
+                                }
+                            </ul>
+                            @if (productoEditado.Variantes.Count == 0)
+                            {
+                                <p class="admin-variants__empty">Este producto todavía no tiene variantes.</p>
+                            }
+
+                            <div class="admin-form__grid admin-variants__form">
+                                <label class="admin-field">
+                                    <span>Talle</span>
+                                    <select @bind="nuevaVariante.IdTalle">
+                                        <option value="0">Elegir…</option>
+                                        @foreach (var talle in talles)
+                                        {
+                                            <option value="@talle.Id">@talle.Nombre</option>
+                                        }
+                                    </select>
+                                </label>
+                                <label class="admin-field">
+                                    <span>Color</span>
+                                    <select @bind="nuevaVariante.IdColor">
+                                        <option value="0">Elegir…</option>
+                                        @foreach (var color in colores)
+                                        {
+                                            <option value="@color.Id">@color.Nombre</option>
+                                        }
+                                    </select>
+                                </label>
+                                <label class="admin-field">
+                                    <span>Stock</span>
+                                    <input type="number" min="0" @bind="nuevaVariante.Stock" />
+                                </label>
+                                <label class="admin-field">
+                                    <span>Precio (vacío = base)</span>
+                                    <input type="number" min="0" step="0.01" @bind="nuevaVariante.Precio" />
+                                </label>
+                            </div>
+
+                            <AppButton Variant="outline" Icon="add" Disabled="guardando" OnClick="GuardarVarianteAsync">
+                                Guardar variante
+                            </AppButton>
+                        </div>
+                    </div>
+                </section>
+            }
+
             <div class="admin-form__actions">
                 <AppButton Variant="primary" Icon="save" Disabled="guardando" OnClick="GuardarProductoAsync">
                     @(guardando ? "Guardando…" : "Guardar")
@@ -104,70 +207,6 @@ else
                     Cancelar
                 </AppButton>
             </div>
-
-            @if (editando.Id != 0 && productoEditado is not null)
-            {
-                <section class="admin-variants" aria-labelledby="variants-title">
-                    <h3 id="variants-title">Variantes (talle + color + stock + precio)</h3>
-
-                    <ul class="admin-variants__list">
-                        @foreach (var variante in productoEditado.Variantes)
-                        {
-                            <li>
-                                <span class="admin-variants__swatch" style="--swatch: @(variante.CodigoHex ?? "#CBD5CF")"></span>
-                                <strong>@variante.Talle</strong> · @variante.Color
-                                <span class="admin-variants__stock @(variante.Stock == 0 ? "is-empty" : variante.Stock <= 3 ? "is-low" : "")">
-                                    @($"stock {variante.Stock}")
-                                </span>
-                                <span class="admin-variants__price">
-                                    @(variante.Precio is { } p
-                                        ? Services.CatalogoPresentation.FormatearPrecio(p)
-                                        : "c/ precio base")
-                                </span>
-                            </li>
-                        }
-                    </ul>
-                    @if (productoEditado.Variantes.Count == 0)
-                    {
-                        <p class="admin-variants__empty">Este producto todavía no tiene variantes.</p>
-                    }
-
-                    <div class="admin-form__grid admin-variants__form">
-                        <label class="admin-field">
-                            <span>Talle</span>
-                            <select @bind="nuevaVariante.IdTalle">
-                                <option value="0">Elegir…</option>
-                                @foreach (var talle in talles)
-                                {
-                                    <option value="@talle.Id">@talle.Nombre</option>
-                                }
-                            </select>
-                        </label>
-                        <label class="admin-field">
-                            <span>Color</span>
-                            <select @bind="nuevaVariante.IdColor">
-                                <option value="0">Elegir…</option>
-                                @foreach (var color in colores)
-                                {
-                                    <option value="@color.Id">@color.Nombre</option>
-                                }
-                            </select>
-                        </label>
-                        <label class="admin-field">
-                            <span>Stock</span>
-                            <input type="number" min="0" @bind="nuevaVariante.Stock" />
-                        </label>
-                        <label class="admin-field">
-                            <span>Precio (vacío = base)</span>
-                            <input type="number" min="0" step="0.01" @bind="nuevaVariante.Precio" />
-                        </label>
-                    </div>
-
-                    <AppButton Variant="outline" Icon="add" Disabled="guardando" OnClick="GuardarVarianteAsync">
-                        Guardar variante
-                    </AppButton>
-                </section>
-            }
         </section>
     }
 
@@ -238,6 +277,9 @@ else
     private string? mensaje;
     private bool esError;
 
+    /// <summary>Estado del acordeón de variantes (arranca plegado).</summary>
+    private bool variantesAbiertas;
+
     private string? buscar;
     private string filtroActivo = "";
 
@@ -249,6 +291,8 @@ else
     private ProductoUpsertRequest? editando;
     /// <summary>Copia editable con variantes (se recarga tras cada alta/edición).</summary>
     private ProductoAdminDto? productoEditado;
+    /// <summary>Imágenes en edición (las nuevas se suben al guardar el producto).</summary>
+    private IReadOnlyList<ImagenProducto> imagenesProducto = [];
     private VarianteUpsertRequest nuevaVariante = new()
     {
         IdProducto = 0,
@@ -278,6 +322,12 @@ else
     }
 
     private void OnSesionCambiada() => InvokeAsync(StateHasChanged);
+
+    /// <summary>
+    /// Despliega o repliega el acordeón de variantes. El panel permanece en el
+    /// DOM (sólo cambia su visibilidad) para no perder lo ya cargado.
+    /// </summary>
+    private void ToggleVariantes() => variantesAbiertas = !variantesAbiertas;
 
     private async Task CargarListasAsync()
     {
@@ -358,6 +408,7 @@ else
             PrecioBase = 0,
             Activo = true,
         };
+        imagenesProducto = [];
         mensaje = null;
     }
 
@@ -373,6 +424,17 @@ else
             PrecioBase = producto.PrecioBase,
             Activo = producto.Activo,
         };
+        imagenesProducto = producto.Imagenes
+            .OrderByDescending(i => i.Principal)
+            .ThenBy(i => i.Orden)
+            .Select(i => new ImagenProducto
+            {
+                Id = i.Id,
+                Url = i.UrlImagen,
+                EsNueva = false,
+                Principal = i.Principal,
+            })
+            .ToList();
         nuevaVariante = new VarianteUpsertRequest
         {
             IdProducto = producto.Id,
@@ -387,6 +449,7 @@ else
     {
         editando = null;
         productoEditado = null;
+        imagenesProducto = [];
         mensaje = null;
     }
 
@@ -417,9 +480,18 @@ else
                 return;
             }
 
+            // Las imágenes nuevas se suben ahora que el producto ya tiene Id.
+            if (!await GuardarImagenesAsync(guardado.Id))
+            {
+                return;
+            }
+
             mensaje = $"Producto \"{guardado.Nombre}\" guardado.";
             esError = false;
-            Editar(guardado);
+
+            // Se recarga el producto para mostrar las imágenes ya persistidas.
+            var actualizado = await AdminApi.GetProductoAsync(guardado.Id);
+            Editar(actualizado ?? guardado);
             await CargarAsync();
         }
         catch (Exception)
@@ -432,6 +504,77 @@ else
             guardando = false;
             StateHasChanged();
         }
+    }
+
+    /// <summary>
+    /// Sube las imágenes nuevas del producto y guarda el orden y la principal.
+    /// Devuelve false si alguna operación falla (el mensaje queda cargado).
+    /// </summary>
+    private async Task<bool> GuardarImagenesAsync(int productoId)
+    {
+        var lista = imagenesProducto.ToList();
+
+        for (var i = 0; i < lista.Count; i++)
+        {
+            var imagen = lista[i];
+            if (!imagen.EsNueva || imagen.Contenido is null)
+            {
+                continue;
+            }
+
+            var subida = await AdminApi.SubirImagenAsync(
+                productoId,
+                new MemoryStream(imagen.Contenido, writable: false),
+                imagen.NombreArchivo ?? "imagen.jpg",
+                imagen.ContentType ?? "image/jpeg");
+
+            if (subida is null)
+            {
+                mensaje = AdminApi.UltimoError ?? "No se pudo subir una imagen.";
+                esError = true;
+                return false;
+            }
+
+            lista[i] = new ImagenProducto
+            {
+                Id = subida.Id,
+                Url = subida.UrlImagen,
+                EsNueva = false,
+                Principal = imagen.Principal,
+                ContentType = imagen.ContentType,
+                NombreArchivo = imagen.NombreArchivo,
+            };
+        }
+
+        // Si el producto no tenía imágenes y no se agregó ninguna, no hay nada
+        // que guardar. Si tenía y se quitaron todas, se envía la lista vacía
+        // para borrarlas.
+        var teniaImagenes = (productoEditado?.Imagenes.Count ?? 0) > 0;
+        if (lista.Count == 0 && !teniaImagenes)
+        {
+            imagenesProducto = lista;
+            return true;
+        }
+
+        var dtos = lista
+            .Select((imagen, indice) => new ProductoImagenDto
+            {
+                Id = imagen.Id,
+                UrlImagen = imagen.Url,
+                Orden = indice + 1,
+                Principal = imagen.Principal || indice == 0,
+            })
+            .ToList();
+
+        if (!await AdminApi.GuardarImagenesAsync(productoId, dtos))
+        {
+            mensaje = AdminApi.UltimoError ?? "No se pudieron guardar las imágenes.";
+            esError = true;
+            return false;
+        }
+
+        imagenesProducto = lista;
+        return true;
     }
 
     private async Task GuardarVarianteAsync()
@@ -522,6 +665,7 @@ else
                 {
                     editando = null;
                     productoEditado = null;
+                    imagenesProducto = [];
                 }
 
                 await CargarAsync();

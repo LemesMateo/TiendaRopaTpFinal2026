@@ -8,6 +8,28 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TiendaRopa.Shared\TiendaRopa.Shared.csproj" />
+    <!-- La API se hospeda en el mismo sitio: el frontend referencia el backend. -->
+    <ProjectReference Include="..\TiendaRopa.Api\TiendaRopa.Api.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- Los estáticos de la API se publican en este sitio, para servir
+         /img/* desde el mismo dominio (ver target de abajo). -->
+    <ImagenProductoApi Include="$(MSBuildProjectDirectory)\..\TiendaRopa.Api\wwwroot\img\**\*.png" />
+  </ItemGroup>
+
+  <!-- Copia física de las imágenes de producto al wwwroot de este proyecto.
+       Se hace con Copy (no con Link) porque un item "Link" apunta a una ruta
+       que no existe dentro del proyecto y el hosting de estáticos devuelve
+       0 bytes. Al quedar como archivos reales en wwwroot, los sirve tanto
+       `dotnet run` como el sitio publicado. -->
+  <Target Name="CopiarImagenesProductos"
+          BeforeTargets="PrepareForBuild;AssignTargetPaths"
+          Inputs="@(ImagenProductoApi)"
+          Outputs="@(ImagenProductoApi->'$(MSBuildProjectDirectory)\wwwroot\img\productos\%(Filename)%(Extension)')">
+    <Copy SourceFiles="@(ImagenProductoApi)"
+          DestinationFolder="$(MSBuildProjectDirectory)\wwwroot\img\productos"
+          SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

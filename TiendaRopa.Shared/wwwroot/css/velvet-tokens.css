@@ -99,6 +99,18 @@
     --vr-content-max: 1180px;
     --vr-tap-min: 44px;          /* objetivo táctil mínimo */
 
+    /* ---- Área segura (safe area) ----
+       Los insets del sistema se aplican UNA sola vez:
+       - Por defecto los resuelve el navegador con env(safe-area-inset-*).
+       - En las plataformas donde la capa nativa ya inseta la ventana
+         (Android en MAUI: MainActivity), el documento se marca con la
+         clase .vr-safe-area-native y estas variables quedan en 0 para
+         no duplicar el espacio reservado. */
+    --vr-safe-top: env(safe-area-inset-top, 0px);
+    --vr-safe-right: env(safe-area-inset-right, 0px);
+    --vr-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --vr-safe-left: env(safe-area-inset-left, 0px);
+
     /* ---- Movimiento ---- */
     --vr-ease: cubic-bezier(0.2, 0.6, 0.3, 1);
     --vr-dur-fast: 140ms;
@@ -110,4 +122,13 @@
         --vr-dur-fast: 0ms;
         --vr-dur: 0ms;
     }
+}
+
+/* La plataforma aplicó los insets de forma nativa (Android en MAUI):
+   el CSS compartido deja de sumar env(safe-area-inset-*). */
+html.vr-safe-area-native {
+    --vr-safe-top: 0px;
+    --vr-safe-right: 0px;
+    --vr-safe-bottom: 0px;
+    --vr-safe-left: 0px;
 }

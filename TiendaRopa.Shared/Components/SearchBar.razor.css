@@ -8,6 +8,9 @@
     border-radius: var(--vr-radius-pill);
     padding-inline: 1rem;
     min-height: 48px;
+    /* Permite que el buscador se encoja en pantallas angostas (320 px). */
+    min-width: 0;
+    width: 100%;
     box-shadow: var(--vr-shadow-sm);
     transition: border-color var(--vr-dur-fast) var(--vr-ease), box-shadow var(--vr-dur-fast) var(--vr-ease);
 }
@@ -24,6 +27,7 @@
 .vr-search__input {
     flex: 1;
     min-width: 0;
+    width: 100%;
     border: 0;
     outline: none;
     background: transparent;

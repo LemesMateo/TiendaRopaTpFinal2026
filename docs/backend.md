@@ -339,3 +339,133 @@ los `.ps1` van **con BOM UTF-8** (si no, rompen con acentos).
    (hoy las imágenes se cargan por seeder).
 3. Recuperación de contraseña y gestión de perfil de cliente.
 4. Commit de limpieza de `bin/obj` del historial git + CI con las tres suites.
+
+---
+
+# Incremento 3 — Interfaz móvil, acordeón de variantes e imágenes de producto
+
+Fecha: 2026-11-10. Estado: **verificado en Web (navegador) y compilado en MAUI**; Android sin ejecutar en emulador.
+
+## 1. Interfaz ajustada al tamaño real de la pantalla
+
+### Diagnóstico
+MAUI 9+ fuerza *edge-to-edge* en Android (`WindowCompat.SetDecorFitsSystemWindows(window, false)`) y
+`ContentPage.SafeAreaEdges` viene en `None`, así que **MAUI no aplica padding de las barras del sistema**
+en Android: el WebView queda dibujado por debajo de la barra de estado y de la barra de gestos.
+
+El proyecto aplicaba el inset **dos veces**:
+1. `TiendaRopa/Platforms/Android/MainActivity.cs` → `decor.SetPadding(...)` (nivel ventana).
+2. `TiendaRopa/wwwroot/app.css` → `.status-bar-safe-area { height: env(safe-area-inset-top) }`
+   (bloque sticky antes de `#app`).
+
+El segundo no aportaba nada en Android (el WebView devuelve 0 para `safe-area-inset-top`) pero sí
+duplicaba el espacio en iOS, y dejaba el hueco visible que se veía en el video.
+
+### Solución
+- **Tokens nuevos** (`velvet-tokens.css`): `--vr-safe-top/right/bottom/left` con
+  `env(safe-area-inset-*)` por defecto, y `html.vr-safe-area-native { --vr-safe-*: 0 }` para
+  la plataforma que ya inseta de forma nativa.
+- **El CSS compartido** (`MainLayout.razor.css`) usa esas variables: encabezado, bottom nav,
+  cajón lateral y barra lateral las respetan. **Una sola aplicación del inset**.
+- **`wwwroot/index.html`** marca el documento con `.vr-safe-area-native` en Android (script inline).
+- **`wwwroot/app.css`**: se eliminó el bloque `.status-bar-safe-area` (era el que duplicaba).
+- **`MainActivity.cs`**: conserva el padding nativo (única fuente en Android) y ahora no reserva
+  la barra de navegación cuando el teclado está abierto (`insets.IsVisible(Type.Ime())`).
+- **Teclado**: `Window.SetSoftInputMode(SoftInput.AdjustResize)` → el WebView encoge y el formulario
+  se desplaza hasta el campo enfocado en vez de quedar tapado.
+- **Scroll horizontal**: `body { overflow-x: clip }` + `min-width: 0` en los contenedores grid/flex
+  del admin y del catálogo. Los `grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))` pasaron
+  a `minmax(0, 1fr)` con breakpoint explícito (560px), porque `minmax(200px, 1fr)` con
+  `auto-fit` define un ancho mínimo mayor que el disponible y desborda.
+- `.app-shell` usa `min-height: 100vh` y después `100dvh` (altura real del viewport).
+
+## 2. Acordeón de variantes (admin)
+
+- La sección de variantes pasó a un acordeón con rótulo **Variantes**
+  (`admin-accordion`), situado **después** de los campos del producto (incluida la descripción y
+  la nueva sección de imágenes) y **antes** de **Guardar** / **Cancelar**.
+- Botón nativo `<button type="button" aria-expanded aria-controls>`: funciona con clic, toque y
+  teclado. El nombre accesible es "Variantes N variantes".
+- El panel se **oculta con CSS** (`display: none`), no se desmonta → **no se pierde nada al plegar**
+  (verificado: la selección de talle/color sobrevive al plegado).
+- Ayuda **"Administrar variantes"** al pasar el cursor, sólo en `@media (hover: hover) and (pointer: fine)`.
+  No depende del hover para desplegar.
+
+## 3. Imágenes de producto (hasta 5)
+
+### Almacenamiento
+- Los archivos se guardan en **`TiendaRopa.Api/wwwroot/img/productos/`** y la base guarda la ruta
+  **relativa** (`/img/productos/pN-<guid>.png`), igual que los placeholders existentes.
+  La URL absoluta la resuelve cada host (`AssetsBase` en Web; descarga + data URL en MAUI por el
+  problema de *mixed content* HTTPS/HTTP).
+- **No se usan rutas locales del dispositivo** como almacenamiento permanente.
+- Al borrar una imagen se elimina el archivo **sólo si** fue subido por el administrador
+  (nombre con GUID). Los placeholders de desarrollo empaquetados no se tocan.
+
+### Validación (idéntica en cliente y servidor)
+Reglas en `TiendaRopa.Contracts/Catalogo/ProductoImagenes.cs`:
+- Máximo **5** imágenes por producto.
+- Máximo **5 MB** por archivo.
+- Tipos: **JPEG y PNG** (Content-Type **y** firma real de los primeros bytes:
+  `FF D8 FF` para JPEG, `89 50 4E 47 0D 0A 1A 0A` para PNG).
+
+### API
+- `POST /api/admin/productos/{id}/imagenes` (multipart `archivo`): sube **por streaming**
+  (`CopyToAsync` a `FileStream`), valida límite, tamaño, tipo y firma; devuelve la fila creada.
+- `PUT /api/admin/productos/{id}/imagenes`: reemplaza la lista (orden + principal). Valida el
+  máximo de 5 y que las rutas sean del prefijo permitido. Si se quita una imagen, el archivo
+  huérfano se borra del disco.
+- `ProductoAdminDto` ahora incluye `Imagenes` (la principal primero).
+
+### Interfaz
+- Nueva sección **Imágenes** debajo de la **Descripción** (componente `AdminImagenesEditor`).
+- Si no hay imágenes: botón **Agregar imágenes**. Si hay: miniaturas + **Agregar más**.
+- Por miniatura: subir/bajar en la lista, **usar como principal** y **quitar**.
+- Al llegar a 5, la acción de agregar se oculta y se explica: *"Alcanzaste el máximo de 5 imágenes
+  por producto."*
+- **Selección por plataforma** (abstracción `ISelectorImagenes`):
+  - Android/iOS/MacCatalyst → selector nativo (`MediaPicker.PickPhotosAsync`, galería del sistema).
+  - Windows y Blazor Web → explorador del sistema (`<InputFile>`), que en el WebView abre el
+    diálogo nativo del sistema operativo.
+- `IResolverImagenes` resuelve la URL a mostrar: en Web la URL de la API; en MAUI descarga la
+  imagen con el `HttpClient` de la app y la sirve como data URL (evita el *mixed content*).
+- Errores claros: archivo inválido, cancelado (no es error), límite alcanzado, tamaño exceeded.
+
+## 4. Verificaciones reales
+
+| Qué | Resultado |
+|---|---|
+| `dotnet build TiendaRopa.Contracts` | OK |
+| `dotnet build TiendaRopa.Api` | OK |
+| `dotnet build TiendaRopa.Shared` | OK |
+| `dotnet build TiendaRopa.Web` | OK |
+| `dotnet build TiendaRopa -f net10.0-android` | OK |
+| `dotnet build TiendaRopa -f net10.0-windows10.0.19041.0` | OK |
+| `scripts/api-tests.ps1` | **47 PASS / 0 FAIL** |
+| `scripts/sql-verify.ps1` | **40 PASS / 0 FAIL** |
+| `scripts/web-tests.mjs` (Playwright 390/768/1440) | **66 PASS / 0 FAIL** |
+| Navegador: sin scroll horizontal | 320/360/390/768/1024/1440 en admin, catálogo, pedidos, catálogos, home, detalle, carrito, mis pedidos, login |
+| Navegador: límite de 5 | 5/5 y aviso de máximo |
+| Navegador: archivo inválido | *"'no-es-imagen.txt' no es una imagen JPEG o PNG."* |
+| API: 6ª imagen | **400** *"El producto ya tiene el máximo de 5 imágenes."* |
+| API: tipo no permitido | **400** *"Sólo se aceptan imágenes JPEG o PNG."* |
+| API: .txt con MIME image/png | **400** *"El archivo no es una imagen JPEG o PNG válida."* |
+
+### Nota sobre `scripts/web-tests.mjs`
+Dos ajustes mínimos al script existente (no se agregaron dependencias):
+1. `waitUntil: 'networkidle'` → helper `gotoApp()` que espera el circuito de Blazor
+   (con Blazor Server el WebSocket queda abierto y `networkidle` nunca se alcanza).
+2. El test de variantes abre el acordeón antes de assertar (ahora arranca plegado).
+3. Se excluye del chequeo de consola el 404 de
+   `/_framework/dotnet-browser-tools/hot-reload-settings.json` (recurso del Hot Reload del SDK en
+   Development, no un error de la aplicación).
+
+## 5. Pendiente / no verificado
+
+- **Android en emulador**: NO se ejecutó (el usuario pidió no usar el emulador por lentitud).
+  Lo verificado es la compilación de `net10.0-android` y el razonamiento sobre
+  `WindowCompat.SetDecorFitsSystemWindows` + `SafeAreaEdges`. **Falta la evidencia visual
+  en un Pixel 9** (scripts/android-ui.ps1 o android-emulator.ps1).
+- **iOS / MacCatalyst**: requieren macOS → no verificados.
+- En Android, el `MediaPicker` exige permisos de galería en algunas versiones de Android;
+  no se probó en dispositivo.

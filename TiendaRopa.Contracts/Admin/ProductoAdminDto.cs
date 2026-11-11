@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using TiendaRopa.Contracts.Catalogo;
 
 namespace TiendaRopa.Contracts.Admin;
 
@@ -26,6 +27,9 @@ public sealed class ProductoAdminDto
 
     /// <summary>Relativa a la API (/img/…); el cliente la resuelve con su BaseAddress.</summary>
     public string? UrlImagen { get; set; }
+
+    /// <summary>Imágenes del producto (la principal primero).</summary>
+    public IReadOnlyList<ProductoImagenDto> Imagenes { get; init; } = [];
 
     public IReadOnlyList<VarianteAdminDto> Variantes { get; init; } = [];
 }

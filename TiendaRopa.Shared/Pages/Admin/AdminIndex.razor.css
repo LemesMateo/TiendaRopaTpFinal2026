@@ -3,8 +3,14 @@
 .admin-cards {
     display: grid;
     gap: var(--vr-space-4);
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     margin-bottom: var(--vr-space-6);
+}
+
+@media (min-width: 560px) {
+    .admin-cards {
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    }
 }
 
 .admin-card {
@@ -42,7 +48,13 @@
 .admin-stats {
     display: grid;
     gap: var(--vr-space-3);
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 560px) {
+    .admin-stats {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
 }
 
 .admin-stat {

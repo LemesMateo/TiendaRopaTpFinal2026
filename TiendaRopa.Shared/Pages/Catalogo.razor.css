@@ -41,6 +41,9 @@
     color: var(--vr-plum-strong);
     cursor: pointer;
     transition: border-color var(--vr-dur-fast) var(--vr-ease);
+    /* Que el filtro pueda encogerse en pantallas angostas. */
+    max-width: 100%;
+    min-width: 0;
 }
 
 .cat-select:hover {
@@ -68,6 +71,7 @@
     padding: 0;
     min-height: auto;
     max-width: 11rem;
+    min-width: 0;
 }
 
 /* ---- Barra de resultados y orden ---- */
@@ -93,6 +97,8 @@
     gap: var(--vr-space-2);
     font-size: var(--vr-fs-sm);
     color: var(--vr-text-muted);
+    min-width: 0;
+    max-width: 100%;
 }
 
 .cat-sort select {
@@ -109,6 +115,8 @@
     cursor: pointer;
     outline: none;
     transition: border-color var(--vr-dur-fast) var(--vr-ease);
+    min-width: 0;
+    max-width: 100%;
 }
 
 .cat-sort select:hover {

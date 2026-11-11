@@ -250,13 +250,50 @@ public class AdminController(AdminService admin, ILogger<AdminController> log) :
 
     // ---------- Imágenes ----------
 
+    /// <summary>
+    /// Sube una imagen (JPEG/PNG, hasta 5 MB) al producto. El archivo se
+    /// escribe en disco por streaming y se valida su tipo y su firma.
+    /// </summary>
+    [HttpPost("productos/{id:int}/imagenes")]
+    [RequestSizeLimit(ProductoImagenes.MaximoBytes + 64 * 1024)]
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<ProductoImagenDto>> SubirImagen(
+        int id, IFormFile? archivo, CancellationToken cancellationToken)
+    {
+        var (valor, error, status) = await admin.SubirImagenAsync(id, archivo, cancellationToken);
+
+        if (valor is null)
+        {
+            return StatusCode(status, new ProblemDetails
+            {
+                Title = "No se pudo subir la imagen",
+                Detail = error,
+                Status = status,
+            });
+        }
+
+        return CreatedAtAction(nameof(GetProducto), new { id }, valor);
+    }
+
     /// <summary>Reemplaza la lista de imágenes (orden + principal) de un producto.</summary>
     [HttpPut("productos/{id:int}/imagenes")]
     public async Task<IActionResult> GuardarImagenes(
         int id, IReadOnlyList<ProductoImagenDto> imagenes, CancellationToken cancellationToken)
-        => await admin.GuardarImagenesAsync(id, imagenes, cancellationToken)
-            ? NoContent()
-            : NotFound(new ProblemDetails { Title = "Producto no encontrado o imágenes inválidas", Status = 404 });
+    {
+        var (ok, error, status) = await admin.GuardarImagenesAsync(id, imagenes, cancellationToken);
+
+        if (!ok)
+        {
+            return StatusCode(status, new ProblemDetails
+            {
+                Title = "No se pudieron guardar las imágenes",
+                Detail = error,
+                Status = status,
+            });
+        }
+
+        return NoContent();
+    }
 
     // ---------- Helpers ----------
 

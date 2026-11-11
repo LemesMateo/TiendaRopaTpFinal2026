@@ -39,7 +39,6 @@ Start-Service MSSQLSERVER
 Esta es la base de todo: la Web y las dos apps le pegan a ella.
 
 ```powershell
-cd C:\Users\mateo\source\repos\TiendaRopa
 dotnet run --project TiendaRopa.Api --launch-profile http
 ```
 
@@ -67,7 +66,6 @@ Credenciales de desarrollo (ya sembradas en la BD):
 Necesita que la API ya esté escuchando. La URL de la API sale de `TiendaRopa.Web/appsettings.json` → `Api:BaseUrl = http://localhost:5100` (no hay que tocar nada).
 
 ```powershell
-cd C:\Users\mateo\source\repos\TiendaRopa
 dotnet run --project TiendaRopa.Web --launch-profile http
 ```
 
@@ -89,7 +87,6 @@ Verificación:
 **No reinstales nada:** SDK, AVDs y JDK ya están configurados. Ver `emuladorAndroid.md`.
 
 ```powershell
-cd C:\Users\mateo\source\repos\TiendaRopa
 powershell -ExecutionPolicy Bypass -File scripts\android-emulator.ps1
 ```
 

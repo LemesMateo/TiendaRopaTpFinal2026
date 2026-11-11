@@ -1,0 +1,363 @@
+@* Editor de imágenes del producto (máximo 5 por producto).
+   La selección usa el mecanismo de cada plataforma:
+   - MAUI en Android/iOS/MacCatalyst: selector nativo (galería del sistema).
+   - MAUI en Windows y Blazor Web: explorador de archivos (<InputFile>).
+   La lista se mantiene en el componente padre (AdminProductos) para que
+   se guarde junto con el producto. *@
+@using TiendaRopa.Contracts.Catalogo
+@using TiendaRopa.Shared.Models
+@using TiendaRopa.Shared.Services
+@inject ISelectorImagenes Selector
+@inject IResolverImagenes Resolver
+
+<section class="vr-imagenes" aria-labelledby="imagenes-title">
+    <div class="vr-imagenes__head">
+        <h3 id="imagenes-title" class="vr-imagenes__title">Imágenes</h3>
+        <span class="vr-imagenes__count">
+            @Imagenes.Count de @ProductoImagenes.MaximoPorProducto
+        </span>
+    </div>
+
+    @if (Imagenes.Count == 0)
+    {
+        <p class="vr-imagenes__empty">
+            Este producto todavía no tiene imágenes. Podés agregar hasta
+            @ProductoImagenes.MaximoPorProducto fotos JPEG o PNG (5 MB cada una).
+        </p>
+    }
+    else
+    {
+        <ul class="vr-imagenes__grid">
+            @for (var i = 0; i < Imagenes.Count; i++)
+            {
+                var indice = i;
+                var imagen = Imagenes[indice];
+                <li class="vr-imagenes__item">
+                    <img class="vr-imagenes__thumb"
+                         src="@UrlVisible(imagen)"
+                         alt="@($"Imagen {indice + 1} del producto")"
+                         loading="lazy" />
+                    @if (imagen.Principal)
+                    {
+                        <span class="vr-imagenes__badge">Principal</span>
+                    }
+                    <div class="vr-imagenes__acciones">
+                        <button type="button"
+                                class="vr-imagenes__btn"
+                                @onclick="(() => Mover(indice, -1))"
+                                disabled="@(indice == 0)"
+                                title="Subir en la lista"
+                                aria-label="@($"Subir la imagen {indice + 1} en la lista")">
+                            <AppIcon Icon="arrow_upward" Size="18" />
+                        </button>
+                        <button type="button"
+                                class="vr-imagenes__btn"
+                                @onclick="(() => Mover(indice, 1))"
+                                disabled="@(indice == Imagenes.Count - 1)"
+                                title="Bajar en la lista"
+                                aria-label="@($"Bajar la imagen {indice + 1} en la lista")">
+                            <AppIcon Icon="arrow_downward" Size="18" />
+                        </button>
+                        <button type="button"
+                                class="vr-imagenes__btn"
+                                @onclick="(() => MarcarPrincipal(indice))"
+                                disabled="@imagen.Principal"
+                                title="Usar como principal"
+                                aria-label="@($"Usar la imagen {indice + 1} como principal")">
+                            <AppIcon Icon="star" Size="18" Filled="@imagen.Principal" />
+                        </button>
+                        <button type="button"
+                                class="vr-imagenes__btn vr-imagenes__btn--quitar"
+                                @onclick="(() => Quitar(indice))"
+                                title="Quitar imagen"
+                                aria-label="@($"Quitar la imagen {indice + 1}")">
+                            <AppIcon Icon="delete" Size="18" />
+                        </button>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+
+    <div class="vr-imagenes__pie">
+        @if (Imagenes.Count < ProductoImagenes.MaximoPorProducto)
+        {
+            @if (Selector.UsaSelectorNativo)
+            {
+                <AppButton Variant="outline"
+                           Icon="add_photo_alternate"
+                           Disabled="cargando"
+                           OnClick="SeleccionarNativoAsync">
+                    @(Imagenes.Count == 0 ? "Agregar imágenes" : "Agregar más")
+                </AppButton>
+            }
+            else
+            {
+                @* El <InputFile> se oculta sobre la etiqueta: al hacer clic se
+                   abre el explorador del sistema y el rótulo conserva el
+                   estilo y la paleta de la aplicación. *@
+                <label class="vr-imagenes__picker">
+                    <AppIcon Icon="add_photo_alternate" Size="20" />
+                    <span>@(Imagenes.Count == 0 ? "Agregar imágenes" : "Agregar más")</span>
+                    <InputFile class="vr-imagenes__file"
+                               OnChange="OnArchivosSeleccionadosAsync"
+                               multiple
+                               accept="image/jpeg,image/jpg,image/png" />
+                </label>
+            }
+        }
+        else
+        {
+            <p class="vr-imagenes__max">
+                Alcanzaste el máximo de @ProductoImagenes.MaximoPorProducto imágenes por producto.
+            </p>
+        }
+    </div>
+
+    @if (mensaje is not null)
+    {
+        <p class="vr-imagenes__aviso @(esError ? "is-error" : "is-ok")" role="alert">@mensaje</p>
+    }
+</section>
+
+@code {
+    /// <summary>Imágenes en edición (las nuevas todavía no están en el servidor).</summary>
+    [Parameter]
+    public IReadOnlyList<ImagenProducto> Imagenes { get; set; } = [];
+
+    /// <summary>Notifica la lista de imágenes al padre.</summary>
+    [Parameter]
+    public EventCallback<IReadOnlyList<ImagenProducto>> ImagenesChanged { get; set; }
+
+    private bool cargando;
+    private string? mensaje;
+    private bool esError;
+
+    /// <summary>URLs ya resueltas por la plataforma (para no repetirlas).</summary>
+    private readonly Dictionary<string, string> _urlsResueltas = new(StringComparer.Ordinal);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        foreach (var imagen in Imagenes)
+        {
+            if (imagen.EsNueva || _urlsResueltas.ContainsKey(imagen.Url))
+            {
+                continue;
+            }
+
+            var resuelta = await Resolver.ResolverAsync(imagen.Url);
+            _urlsResueltas[imagen.Url] = resuelta ?? imagen.Url;
+        }
+    }
+
+    private string UrlVisible(ImagenProducto imagen)
+        => imagen.EsNueva ? imagen.Url : _urlsResueltas.GetValueOrDefault(imagen.Url, imagen.Url);
+
+    private async Task OnArchivosSeleccionadosAsync(InputFileChangeEventArgs args)
+    {
+        mensaje = null;
+        cargando = true;
+        StateHasChanged();
+
+        try
+        {
+            var seleccionadas = new List<ImagenSeleccionada>();
+
+            foreach (var archivo in args.GetMultipleFiles(10))
+            {
+                var error = await LeerArchivoWebAsync(archivo, seleccionadas);
+                if (error is not null)
+                {
+                    mensaje = error;
+                    esError = true;
+                    break;
+                }
+            }
+
+            await AgregarAsync(seleccionadas);
+        }
+        catch (InvalidOperationException)
+        {
+            mensaje = "Seleccioná menos archivos a la vez.";
+            esError = true;
+        }
+        catch (IOException)
+        {
+            mensaje = "No se pudo leer el archivo seleccionado.";
+            esError = true;
+        }
+        finally
+        {
+            cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>Lee y valida un archivo elegido con el explorador del sistema.</summary>
+    private static async Task<string?> LeerArchivoWebAsync(
+        IBrowserFile archivo, List<ImagenSeleccionada> acumuladas)
+    {
+        if (archivo.Size > ProductoImagenes.MaximoBytes)
+        {
+            return $"\"{archivo.Name}\" supera el máximo de {ProductoImagenes.MaximoBytes / (1024 * 1024)} MB.";
+        }
+
+        await using var stream = archivo.OpenReadStream(ProductoImagenes.MaximoBytes);
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer);
+        var bytes = buffer.ToArray();
+
+        var error = ImagenesValidador.Validar(
+            archivo.ContentType, archivo.Name, bytes, bytes.LongLength);
+
+        if (error is not null)
+        {
+            return error;
+        }
+
+        acumuladas.Add(new ImagenSeleccionada
+        {
+            NombreArchivo = archivo.Name,
+            ContentType = ImagenesValidador.NormalizarTipo(archivo.ContentType)!,
+            Tamano = bytes.LongLength,
+            Contenido = bytes,
+        });
+
+        return null;
+    }
+
+    private async Task SeleccionarNativoAsync()
+    {
+        mensaje = null;
+        cargando = true;
+        StateHasChanged();
+
+        try
+        {
+            var resultado = await Selector.SeleccionarAsync();
+
+            if (resultado.Error is not null)
+            {
+                mensaje = resultado.Error;
+                esError = true;
+            }
+
+            if (resultado.Imagenes.Count == 0)
+            {
+                // El usuario canceló el selector: no es un error.
+                return;
+            }
+
+            await AgregarAsync(resultado.Imagenes);
+        }
+        catch (Exception)
+        {
+            mensaje = "No se pudo abrir el selector de imágenes.";
+            esError = true;
+        }
+        finally
+        {
+            cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task AgregarAsync(IReadOnlyList<ImagenSeleccionada> seleccion)
+    {
+        if (seleccion.Count == 0)
+        {
+            return;
+        }
+
+        var espacio = ProductoImagenes.MaximoPorProducto - Imagenes.Count;
+        if (espacio <= 0)
+        {
+            mensaje = $"Un producto admite hasta {ProductoImagenes.MaximoPorProducto} imágenes.";
+            esError = true;
+            return;
+        }
+
+        var aAgregar = seleccion.Take(espacio).ToList();
+        var descartadas = seleccion.Count - aAgregar.Count;
+
+        var nuevaLista = Imagenes.ToList();
+        foreach (var imagen in aAgregar)
+        {
+            nuevaLista.Add(new ImagenProducto
+            {
+                Id = 0,
+                Url = imagen.UrlDatos,
+                EsNueva = true,
+                Principal = nuevaLista.Count == 0,
+                Contenido = imagen.Contenido,
+                ContentType = imagen.ContentType,
+                NombreArchivo = imagen.NombreArchivo,
+            });
+        }
+
+        await ImagenesChanged.InvokeAsync(nuevaLista);
+
+        if (descartadas > 0)
+        {
+            mensaje = $"Se agregaron {aAgregar.Count} imágenes; {descartadas} quedaron afuera por el límite de {ProductoImagenes.MaximoPorProducto}.";
+            esError = true;
+        }
+    }
+
+    private async Task Mover(int indice, int delta)
+    {
+        var nuevaLista = Imagenes.ToList();
+        var destino = indice + delta;
+        if (destino < 0 || destino >= nuevaLista.Count)
+        {
+            return;
+        }
+
+        (nuevaLista[indice], nuevaLista[destino]) = (nuevaLista[destino], nuevaLista[indice]);
+        await ImagenesChanged.InvokeAsync(nuevaLista);
+    }
+
+    private async Task MarcarPrincipal(int indice)
+    {
+        var nuevaLista = Imagenes.ToList();
+        for (var i = 0; i < nuevaLista.Count; i++)
+        {
+            nuevaLista[i] = new ImagenProducto
+            {
+                Id = nuevaLista[i].Id,
+                Url = nuevaLista[i].Url,
+                EsNueva = nuevaLista[i].EsNueva,
+                Principal = i == indice,
+                Contenido = nuevaLista[i].Contenido,
+                ContentType = nuevaLista[i].ContentType,
+                NombreArchivo = nuevaLista[i].NombreArchivo,
+            };
+        }
+
+        await ImagenesChanged.InvokeAsync(nuevaLista);
+    }
+
+    private async Task Quitar(int indice)
+    {
+        var nuevaLista = Imagenes.ToList();
+        nuevaLista.RemoveAt(indice);
+
+        // Si se quitó la principal, la primera de la lista pasa a serlo.
+        if (nuevaLista.Count > 0 && !nuevaLista.Any(i => i.Principal))
+        {
+            var primera = nuevaLista[0];
+            nuevaLista[0] = new ImagenProducto
+            {
+                Id = primera.Id,
+                Url = primera.Url,
+                EsNueva = primera.EsNueva,
+                Principal = true,
+                Contenido = primera.Contenido,
+                ContentType = primera.ContentType,
+                NombreArchivo = primera.NombreArchivo,
+            };
+        }
+
+        await ImagenesChanged.InvokeAsync(nuevaLista);
+    }
+}

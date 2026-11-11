@@ -14,10 +14,13 @@
     position: relative;
     display: flex;
     align-items: center;
+    /* Permite que el campo se encoja en pantallas angostas. */
+    min-width: 0;
 }
 
 .vr-field__input {
     width: 100%;
+    min-width: 0;
     background-color: var(--vr-surface);
     border: 1.5px solid var(--vr-border);
     border-radius: var(--vr-radius-md);

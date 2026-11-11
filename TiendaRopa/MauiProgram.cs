@@ -7,24 +7,13 @@ using TiendaRopa.Contracts.Admin;
 using TiendaRopa.Contracts.Catalogo;
 using TiendaRopa.Contracts.Identidad;
 using TiendaRopa.Contracts.Pedidos;
+using TiendaRopa.Services;
 using TiendaRopa.Shared.Services;
 
 namespace TiendaRopa
 {
     public static class MauiProgram
     {
-        // URL base de la API Velvet Rose por plataforma:
-        //  - Windows/macOS: la API corre en esta misma máquina -> localhost.
-        //  - Android (emulador): 10.0.2.2 apunta al host de la máquina.
-        //    En un dispositivo físico hay que usar la IP en LAN de la PC
-        //    (ajustar acá; verificar que la API escuche en esa red).
-        // Nota: en Android se habilitó usesCleartextTraffic sólo en desarrollo.
-#if ANDROID
-        private const string ApiBaseUrl = "http://10.0.2.2:5100";
-#else
-        private const string ApiBaseUrl = "http://localhost:5100";
-#endif
-
         public static MauiApp CreateMauiApp()
         {
             var builder = MauiApp.CreateBuilder();
@@ -47,7 +36,7 @@ namespace TiendaRopa
             // Cliente HTTP único y de larga vida para la API del catálogo.
             // Un solo HttpClient también para las APIs autenticadas; el JWT se
             // agrega por request desde SesionService (ApiHttp.Preparar).
-            var http = new HttpClient { BaseAddress = new Uri(ApiBaseUrl) };
+            var http = new HttpClient { BaseAddress = new Uri(ConfiguracionApp.ApiBaseUrl) };
             builder.Services.AddSingleton(http);
 
             // En MAUI los activos de productos (/img/…) los empaqueta el host
@@ -71,6 +60,12 @@ namespace TiendaRopa
                 new HttpPedidoService(sp.GetRequiredService<HttpClient>(), sp.GetRequiredService<SesionService>(), assets));
             builder.Services.AddScoped<IAdminService>(sp =>
                 new HttpAdminService(sp.GetRequiredService<HttpClient>(), sp.GetRequiredService<SesionService>(), assets));
+
+            // Selección de imágenes según la plataforma: en Android/iOS el
+            // selector nativo (galería) y en Windows el explorador del
+            // sistema a través del <InputFile> del componente compartido.
+            builder.Services.AddScoped<ISelectorImagenes, SelectorImagenesMaui>();
+            builder.Services.AddScoped<IResolverImagenes, ResolverImagenesMaui>();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

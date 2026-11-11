@@ -12,7 +12,7 @@ namespace TiendaRopa.Api.Services;
 /// Baja lógica para todo lo que pueda tener historial (productos, categorías,
 /// talles, colores): nunca se borran filas referenciadas por pedidos.
 /// </summary>
-public sealed class AdminService(VelvetRoseDbContext db, PedidoService pedidos)
+public sealed class AdminService(VelvetRoseDbContext db, PedidoService pedidos, IWebHostEnvironment entorno)
 {
     // ---------------- Productos ----------------
 
@@ -54,6 +54,16 @@ public sealed class AdminService(VelvetRoseDbContext db, PedidoService pedidos)
                     .Select(i => i.UrlImagen)
                     .FirstOrDefault()
                     ?? p.Imagenes.OrderBy(i => i.Orden).Select(i => i.UrlImagen).FirstOrDefault(),
+                Imagenes = p.Imagenes
+                    .OrderBy(i => i.Principal).ThenBy(i => i.Orden)
+                    .Select(i => new ProductoImagenDto
+                    {
+                        Id = i.IdProductoImagen,
+                        UrlImagen = i.UrlImagen,
+                        Orden = i.Orden,
+                        Principal = i.Principal,
+                    })
+                    .ToList(),
                 Variantes = p.Variantes
                     .OrderBy(v => v.IdTalle).ThenBy(v => v.IdColor)
                     .Select(v => new VarianteAdminDto
@@ -94,6 +104,16 @@ public sealed class AdminService(VelvetRoseDbContext db, PedidoService pedidos)
                     .Select(i => i.UrlImagen)
                     .FirstOrDefault()
                     ?? p.Imagenes.OrderBy(i => i.Orden).Select(i => i.UrlImagen).FirstOrDefault(),
+                Imagenes = p.Imagenes
+                    .OrderBy(i => i.Principal).ThenBy(i => i.Orden)
+                    .Select(i => new ProductoImagenDto
+                    {
+                        Id = i.IdProductoImagen,
+                        UrlImagen = i.UrlImagen,
+                        Orden = i.Orden,
+                        Principal = i.Principal,
+                    })
+                    .ToList(),
                 Variantes = p.Variantes
                     .OrderBy(v => v.IdTalle).ThenBy(v => v.IdColor)
                     .Select(v => new VarianteAdminDto
@@ -508,8 +528,17 @@ public sealed class AdminService(VelvetRoseDbContext db, PedidoService pedidos)
 
     // ---------------- Imágenes ----------------
 
-    public async Task<bool> GuardarImagenesAsync(
-        int productoId, IReadOnlyList<ProductoImagenDto> imagenes, CancellationToken ct)
+    /// <summary>Carpeta donde la API guarda las imágenes de producto.</summary>
+    private string CarpetaImagenes =>
+        Path.Combine(entorno.WebRootPath ?? Path.Combine(entorno.ContentRootPath, "wwwroot"), "img", "productos");
+
+    /// <summary>
+    /// Sube una imagen al producto: valida tipo, tamaño y límite por producto,
+    /// la escribe en disco por streaming (sin cargarla entera en memoria) y
+    /// registra la fila con su ruta relativa.
+    /// </summary>
+    public async Task<(ProductoImagenDto? Valor, string? Error, int Status)> SubirImagenAsync(
+        int productoId, IFormFile? archivo, CancellationToken ct)
     {
         var producto = await db.Productos
             .Include(p => p.Imagenes)
@@ -517,37 +546,255 @@ public sealed class AdminService(VelvetRoseDbContext db, PedidoService pedidos)
 
         if (producto is null)
         {
-            return false;
+            return (null, "Producto no encontrado.", 404);
         }
+
+        if (archivo is null || archivo.Length == 0)
+        {
+            return (null, "No se recibió ningún archivo.", 400);
+        }
+
+        if (producto.Imagenes.Count >= ProductoImagenes.MaximoPorProducto)
+        {
+            return (null,
+                $"El producto ya tiene el máximo de {ProductoImagenes.MaximoPorProducto} imágenes.",
+                400);
+        }
+
+        if (archivo.Length > ProductoImagenes.MaximoBytes)
+        {
+            return (null,
+                $"La imagen supera el máximo de {ProductoImagenes.MaximoBytes / (1024 * 1024)} MB.",
+                400);
+        }
+
+        var contentType = archivo.ContentType;
+        if (!ProductoImagenes.EsTipoPermitido(contentType))
+        {
+            return (null, "Sólo se aceptan imágenes JPEG o PNG.", 400);
+        }
+
+        var extension = ProductoImagenes.ExtensionPorTipo(contentType);
+        if (extension is null)
+        {
+            return (null, "Sólo se aceptan imágenes JPEG o PNG.", 400);
+        }
+
+        // Se copia el archivo a disco por streaming y se valida la firma
+        // (los primeros bytes) para no confiar sólo en el Content-Type.
+        var nombreArchivo = $"p{productoId}-{Guid.NewGuid():N}.{extension}";
+        var ruta = Path.Combine(CarpetaImagenes, nombreArchivo);
+
+        Directory.CreateDirectory(CarpetaImagenes);
+
+        long escritos;
+        try
+        {
+            await using (var origen = archivo.OpenReadStream())
+            await using (var destino = new FileStream(ruta, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                await origen.CopyToAsync(destino, ct);
+            }
+
+            escritos = new FileInfo(ruta).Length;
+        }
+        catch (IOException)
+        {
+            return (null, "No se pudo guardar la imagen en el servidor.", 500);
+        }
+
+        if (escritos != archivo.Length)
+        {
+            TryEliminarArchivo(ruta);
+            return (null, "La imagen se subió incompleta. Volvé a intentarlo.", 400);
+        }
+
+        // Validación de la firma sobre el archivo ya escrito.
+        // La lectura se cierra ANTES de borrar el archivo: en Windows no se
+        // puede eliminar un archivo con el stream abierto.
+        bool firmaValida;
+        await using (var stream = new FileStream(ruta, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            var cabecera = new byte[8];
+            var leidos = await stream.ReadAsync(cabecera, ct);
+            firmaValida = ProductoImagenes.TieneFirmaValida(cabecera.AsSpan(0, leidos));
+        }
+
+        if (!firmaValida)
+        {
+            TryEliminarArchivo(ruta);
+            return (null, "El archivo no es una imagen JPEG o PNG válida.", 400);
+        }
+
+        var nueva = new ProductoImagen
+        {
+            IdProducto = productoId,
+            UrlImagen = $"{ProductoImagenes.PrefijoRuta}{nombreArchivo}",
+            Orden = producto.Imagenes.Count + 1,
+            Principal = producto.Imagenes.Count == 0,
+        };
+
+        db.ProductoImagenes.Add(nueva);
+        await db.SaveChangesAsync(ct);
+
+        return (new ProductoImagenDto
+        {
+            Id = nueva.IdProductoImagen,
+            UrlImagen = nueva.UrlImagen,
+            Orden = nueva.Orden,
+            Principal = nueva.Principal,
+        }, null, 201);
+    }
+
+    /// <summary>
+    /// Reemplaza la lista de imágenes del producto (orden + principal).
+    /// Sólo se borran del disco los archivos que subió el administrador y
+    /// quedaron sin referencia: los placeholders de desarrollo no se tocan.
+    /// </summary>
+    public async Task<(bool Ok, string? Error, int Status)> GuardarImagenesAsync(
+        int productoId, IReadOnlyList<ProductoImagenDto> imagenes, CancellationToken ct)
+    {
+        if (imagenes.Count > ProductoImagenes.MaximoPorProducto)
+        {
+            return (false,
+                $"Un producto admite hasta {ProductoImagenes.MaximoPorProducto} imágenes.",
+                400);
+        }
+
+        foreach (var imagen in imagenes)
+        {
+            if (string.IsNullOrWhiteSpace(imagen.UrlImagen)
+                || !imagen.UrlImagen.StartsWith(ProductoImagenes.PrefijoRuta, StringComparison.Ordinal))
+            {
+                return (false, "Ruta de imagen inválida.", 400);
+            }
+        }
+
+        var producto = await db.Productos
+            .Include(p => p.Imagenes)
+            .FirstOrDefaultAsync(p => p.IdProducto == productoId, ct);
+
+        if (producto is null)
+        {
+            return (false, "Producto no encontrado.", 404);
+        }
+
+        // Sólo una imagen puede ser principal: si no se marca ninguna, la
+        // primera de la lista lo es.
+        var hayPrincipal = imagenes.Any(i => i.Principal);
+        var orden = 1;
+        var principalTomada = false;
 
         db.ProductoImagenes.RemoveRange(producto.Imagenes);
 
-        var orden = 1;
         foreach (var imagen in imagenes)
         {
-            if (string.IsNullOrWhiteSpace(imagen.UrlImagen))
-            {
-                continue;
-            }
+            var principal = imagen.Principal && !principalTomada;
+            principalTomada |= principal;
 
             db.ProductoImagenes.Add(new ProductoImagen
             {
                 IdProducto = productoId,
                 UrlImagen = imagen.UrlImagen.Trim(),
                 Orden = orden++,
-                Principal = imagen.Principal,
+                Principal = principal,
             });
+        }
+
+        if (!principalTomada && orden > 1)
+        {
+            // La primera imagen queda como principal.
+            var primera = await db.ProductoImagenes
+                .Where(i => i.IdProducto == productoId)
+                .OrderBy(i => i.Orden)
+                .FirstOrDefaultAsync(ct);
+
+            if (primera is not null)
+            {
+                primera.Principal = true;
+            }
         }
 
         try
         {
             await db.SaveChangesAsync(ct);
-            return true;
         }
         catch (DbUpdateException)
         {
             // Índice parcial: sólo una imagen principal por producto.
-            return false;
+            return (false, "No se pudo guardar la lista de imágenes.", 409);
+        }
+
+        LimpiarArchivosHuerfanos(productoId, imagenes.Select(i => i.UrlImagen));
+
+        return (true, null, 200);
+    }
+
+    /// <summary>Borra del disco las imágenes subidas que ya no se referencian.</summary>
+    private void LimpiarArchivosHuerfanos(int productoId, IEnumerable<string> urlsActuales)
+    {
+        var actuales = urlsActuales
+            .Select(u => Path.GetFileName(u))
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        try
+        {
+            var carpeta = CarpetaImagenes;
+            if (!Directory.Exists(carpeta))
+            {
+                return;
+            }
+
+            foreach (var archivo in Directory.EnumerateFiles(carpeta))
+            {
+                var nombre = Path.GetFileName(archivo);
+                if (actuales.Contains(nombre))
+                {
+                    continue;
+                }
+
+                // Sólo se borran los archivos propios (nombre con GUID) y los
+                // que corresponden a este producto.
+                if (!ProductoImagenes.EsArchivoSubido(nombre))
+                {
+                    continue;
+                }
+
+                var idTexto = nombre.StartsWith("p", StringComparison.OrdinalIgnoreCase)
+                    ? nombre[1..].Split('-')[0]
+                    : string.Empty;
+
+                if (!int.TryParse(idTexto, out var id) || id != productoId)
+                {
+                    continue;
+                }
+
+                TryEliminarArchivo(archivo);
+            }
+        }
+        catch (IOException)
+        {
+            // La limpieza es best-effort: no debe fallar el guardado.
+        }
+    }
+
+    private static void TryEliminarArchivo(string ruta)
+    {
+        try
+        {
+            if (File.Exists(ruta))
+            {
+                File.Delete(ruta);
+            }
+        }
+        catch (IOException)
+        {
+            // Best-effort.
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Best-effort.
         }
     }
 }

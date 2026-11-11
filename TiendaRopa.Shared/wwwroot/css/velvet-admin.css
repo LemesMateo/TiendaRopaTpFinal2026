@@ -20,8 +20,15 @@
 .admin-toolbar {
     display: grid;
     gap: var(--vr-space-3);
+    /* minmax(0, 1fr) evita que la barra crece con el contenido del buscador
+       y desborde la pantalla en anchos angostos (320 px). */
+    grid-template-columns: minmax(0, 1fr);
     margin-bottom: var(--vr-space-4);
     align-items: center;
+}
+
+.admin-toolbar > * {
+    min-width: 0;
 }
 
 @media (min-width: 768px) {
@@ -73,6 +80,14 @@
     margin-bottom: var(--vr-space-6);
     display: grid;
     gap: var(--vr-space-4);
+    min-width: 0;
+}
+
+/* Los bloques del formulario pueden encogerse por debajo de su ancho
+   intrínseco: sin esto los inputs (y el textarea) ensanchan el formulario
+   y desbordan la pantalla en anchos angostos. */
+.admin-form > * {
+    min-width: 0;
 }
 
 .admin-form h2 {
@@ -91,15 +106,26 @@
 .admin-form__grid {
     display: grid;
     gap: var(--vr-space-4);
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    /* Móvil: una sola columna para que los controles no se desborden. */
+    grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 560px) {
+    .admin-form__grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
 }
 
 .admin-field {
     display: grid;
+    /* minmax(0, 1fr) permite que el control se encoja por debajo de su
+       ancho intrínseco (los inputs HTML no se achican solos). */
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--vr-space-1);
     font-size: var(--vr-fs-sm);
     font-weight: 600;
     color: var(--vr-text);
+    min-width: 0;
 }
 
 .admin-field--wide {
@@ -117,6 +143,10 @@
     font: inherit;
     font-weight: 400;
     color: var(--vr-text);
+    /* El control nunca supera el ancho de la columna (pantallas angostas). */
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
 }
 
 .admin-field textarea {
@@ -151,6 +181,107 @@
     display: flex;
     gap: var(--vr-space-3);
     flex-wrap: wrap;
+}
+
+/* ---- Acordeón (variantes) ---- */
+.admin-accordion {
+    border: 1px solid var(--vr-border);
+    border-radius: var(--vr-radius-md);
+    background: var(--vr-surface-soft);
+}
+
+.admin-accordion__header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--vr-space-3);
+    /* En pantallas angostas el contador pasa debajo del título. */
+    flex-wrap: wrap;
+    width: 100%;
+    min-height: var(--vr-tap-min);
+    padding: var(--vr-space-3) var(--vr-space-4);
+    border: 0;
+    border-radius: var(--vr-radius-md);
+    background: transparent;
+    color: var(--vr-plum-strong);
+    font: inherit;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.admin-accordion__header:hover {
+    background: var(--vr-primary-soft);
+}
+
+.admin-accordion__titulo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    font-family: var(--vr-font-display);
+    font-size: var(--vr-fs-md);
+}
+
+.admin-accordion__meta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    color: var(--vr-text-muted);
+}
+
+.admin-accordion__conteo {
+    font-family: var(--vr-font-body);
+    font-size: var(--vr-fs-sm);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.admin-accordion__chevron {
+    transition: transform var(--vr-dur) var(--vr-ease);
+}
+
+.admin-accordion.is-open .admin-accordion__chevron {
+    transform: rotate(180deg);
+}
+
+/* El panel se oculta con CSS (no se desmonta): al plegar el acordeón no se
+   pierde lo que el administrador ya cargó. */
+.admin-accordion__panel {
+    display: none;
+}
+
+.admin-accordion.is-open .admin-accordion__panel {
+    display: block;
+    padding: 0 var(--vr-space-4) var(--vr-space-4);
+}
+
+/* Ayuda al pasar el cursor (sólo en escritorio con puntero fino). */
+.admin-accordion__tooltip {
+    position: absolute;
+    bottom: calc(100% + var(--vr-space-2));
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    z-index: 5;
+    padding: var(--vr-space-1) var(--vr-space-3);
+    border-radius: var(--vr-radius-sm);
+    background: var(--vr-plum-strong);
+    color: var(--vr-text-inverse);
+    font-size: var(--vr-fs-xs);
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--vr-dur-fast) var(--vr-ease), transform var(--vr-dur-fast) var(--vr-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .admin-accordion__header:hover .admin-accordion__tooltip,
+    .admin-accordion__header:focus-visible .admin-accordion__tooltip {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
 }
 
 /* ---- Variantes ---- */
@@ -354,8 +485,14 @@
 .admin-catalogs {
     display: grid;
     gap: var(--vr-space-5);
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
+}
+
+@media (min-width: 560px) {
+    .admin-catalogs {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
 }
 
 /* ---- Pedidos admin ---- */
@@ -367,6 +504,11 @@
     display: grid;
     gap: var(--vr-space-3);
     box-shadow: var(--vr-shadow-sm);
+    min-width: 0;
+}
+
+.admin-pedido > * {
+    min-width: 0;
 }
 
 .admin-pedido__head {
@@ -387,12 +529,23 @@
     margin: 2px 0 0;
     font-size: var(--vr-fs-sm);
     color: var(--vr-text-muted);
+    /* Los correos largos no deben ensanchar la tarjeta en móvil. */
+    overflow-wrap: anywhere;
 }
 
 .admin-pedido__estado {
     display: flex;
     align-items: center;
     gap: var(--vr-space-2);
+    /* El badge, el select y el botón pasan a otra línea si no entran. */
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.admin-pedido__estado select {
+    min-width: 0;
+    max-width: 100%;
+}
     flex-wrap: wrap;
 }
 

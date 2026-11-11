@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using TiendaRopa.Contracts.Admin;
@@ -271,6 +272,39 @@ public sealed class HttpAdminService(HttpClient http, SesionService sesion, Asse
     }
 
     // ---------------- Imágenes ----------------
+
+    /// <summary>
+    /// Sube una imagen al producto. El contenido se envía por streaming
+    /// (multipart/form-data) sin cargarlo entero en memoria.
+    /// </summary>
+    public async Task<ProductoImagenDto?> SubirImagenAsync(
+        int productoId,
+        Stream contenido,
+        string nombreArchivo,
+        string contentType,
+        CancellationToken ct = default)
+    {
+        using var request = ApiHttp.Preparar(
+            HttpMethod.Post, $"api/admin/productos/{productoId}/imagenes", sesion);
+
+        var archivo = new StreamContent(contenido);
+        archivo.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+
+        var multipart = new MultipartFormDataContent();
+        multipart.Add(archivo, "archivo", nombreArchivo);
+        request.Content = multipart;
+
+        using var respuesta = await http.SendAsync(request, ct);
+
+        if (!respuesta.IsSuccessStatusCode)
+        {
+            UltimoError = await ApiHttp.LeerErrorAsync(respuesta);
+            return null;
+        }
+
+        UltimoError = null;
+        return await respuesta.Content.ReadFromJsonAsync<ProductoImagenDto>(Json, ct);
+    }
 
     public async Task<bool> GuardarImagenesAsync(
         int productoId, IReadOnlyList<ProductoImagenDto> imagenes, CancellationToken ct = default)

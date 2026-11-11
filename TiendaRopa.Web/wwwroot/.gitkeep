@@ -1,0 +1,4 @@
+# Carpeta de estáticos del sitio web.
+# Las imágenes de producto se toman de TiendaRopa.Api/wwwroot vía glob en el
+# .csproj (link wwwroot/…) y se copian al publicar. Este archivo sólo mantiene
+# la carpeta en el repositorio para que el hosting de estáticos la encuentre.

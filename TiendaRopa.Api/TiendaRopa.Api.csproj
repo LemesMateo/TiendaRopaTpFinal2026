@@ -6,10 +6,23 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>TiendaRopa.Api</RootNamespace>
     <InvariantGlobalization>false</InvariantGlobalization>
+    <!-- Cuando la API se referencia desde TiendaRopa.Web (hospedaje en un solo
+         sitio), los dos proyectos son Sdk.Web y el módulo de Hot Reload de
+         Blazor se duplica, rompiendo el build en Debug. La API no aporta
+         estáticos propios: sus imágenes se sirven desde wwwroot de la Web. -->
+    <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\TiendaRopa.Contracts\TiendaRopa.Contracts.csproj" />
+  </ItemGroup>
+
+  <!-- Cuando la API se referencia desde TiendaRopa.Web (hospedaje en un solo
+       sitio), sus archivos no deben publicarse por duplicado: el sitio dueño
+       del despliegue es la Web (su appsettings y su wwwroot mandan). -->
+  <ItemGroup>
+    <Content Update="appsettings.json" CopyToPublishDirectory="Never" />
+    <Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,0 +1,209 @@
+/* Editor de imágenes del producto (máx. 5) — panel administrativo. */
+
+.vr-imagenes {
+    display: grid;
+    gap: var(--vr-space-3);
+    padding: var(--vr-space-4);
+    border: 1px solid var(--vr-border);
+    border-radius: var(--vr-radius-md);
+    background: var(--vr-surface-soft);
+    min-width: 0;
+}
+
+/* Los bloques internos pueden encogerse: sin esto la grilla de miniaturas
+   define el ancho mínimo y desborda en pantallas angostas. */
+.vr-imagenes > * {
+    min-width: 0;
+}
+
+.vr-imagenes__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--vr-space-3);
+}
+
+.vr-imagenes__title {
+    margin: 0;
+    font-size: var(--vr-fs-md);
+    color: var(--vr-plum-strong);
+}
+
+.vr-imagenes__count {
+    font-size: var(--vr-fs-sm);
+    font-weight: 600;
+    color: var(--vr-text-muted);
+}
+
+.vr-imagenes__empty {
+    margin: 0;
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text-muted);
+}
+
+.vr-imagenes__grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    /* Columnas explícitas por breakpoint: miniaturas compactas que nunca
+       desbordan la pantalla (minmax(0, 1fr) siempre entra). */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--vr-space-3);
+}
+
+@media (min-width: 480px) {
+    .vr-imagenes__grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 768px) {
+    .vr-imagenes__grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .vr-imagenes__grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+}
+
+.vr-imagenes__item {
+    position: relative;
+    display: grid;
+    gap: var(--vr-space-2);
+    padding: var(--vr-space-2);
+    border: 1px solid var(--vr-border);
+    border-radius: var(--vr-radius-sm);
+    background: var(--vr-surface);
+}
+
+.vr-imagenes__thumb {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: var(--vr-radius-sm);
+    background: var(--vr-surface-tint);
+}
+
+.vr-imagenes__badge {
+    position: absolute;
+    top: var(--vr-space-3);
+    left: var(--vr-space-3);
+    padding: 2px var(--vr-space-2);
+    border-radius: var(--vr-radius-pill);
+    background: var(--vr-primary);
+    color: var(--vr-primary-contrast);
+    font-size: var(--vr-fs-xs);
+    font-weight: 700;
+}
+
+.vr-imagenes__acciones {
+    /* 2 × 2 para que los cuatro botones entren en la miniatura angosta. */
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--vr-space-1);
+}
+
+.vr-imagenes__btn {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 32px;
+    border: 1px solid var(--vr-border-strong);
+    border-radius: var(--vr-radius-sm);
+    background: var(--vr-surface);
+    color: var(--vr-plum);
+    cursor: pointer;
+    transition: background-color var(--vr-dur-fast) var(--vr-ease), color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.vr-imagenes__btn:hover:not(:disabled) {
+    background: var(--vr-primary-soft);
+    color: var(--vr-primary);
+}
+
+.vr-imagenes__btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.vr-imagenes__btn--quitar:hover:not(:disabled) {
+    background: var(--vr-danger-bg);
+    color: var(--vr-danger);
+}
+
+/* Etiqueta que actúa como botón y abre el explorador del sistema. */
+.vr-imagenes__picker {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    min-height: var(--vr-tap-min);
+    padding: 0 var(--vr-space-4);
+    border: 1.5px solid var(--vr-primary);
+    border-radius: var(--vr-radius-pill);
+    background: var(--vr-surface);
+    color: var(--vr-primary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color var(--vr-dur-fast) var(--vr-ease), color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.vr-imagenes__picker:hover {
+    background: var(--vr-primary-soft);
+    color: var(--vr-primary-hover);
+}
+
+.vr-imagenes__picker:focus-within {
+    outline: 2px solid var(--vr-focus);
+    outline-offset: 2px;
+}
+
+/* El input real queda oculto (sigue siendo accesible por teclado y la
+   etiqueta lo activa al hacer clic) pero no define el ancho de la etiqueta:
+   si no, el ancho intrínseco del selector desborda en pantallas angostas.
+   ::deep porque el <input> lo renderiza el componente InputFile del
+   framework y no recibe el atributo de scope de este archivo. */
+.vr-imagenes__picker ::deep .vr-imagenes__file {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+    opacity: 0;
+}
+
+.vr-imagenes__pie {
+    display: flex;
+    align-items: center;
+    gap: var(--vr-space-3);
+    flex-wrap: wrap;
+}
+
+.vr-imagenes__max {
+    margin: 0;
+    font-size: var(--vr-fs-sm);
+    font-weight: 600;
+    color: var(--vr-warning);
+}
+
+.vr-imagenes__aviso {
+    margin: 0;
+    font-size: var(--vr-fs-sm);
+}
+
+.vr-imagenes__aviso.is-error {
+    color: var(--vr-danger);
+}
+
+.vr-imagenes__aviso.is-ok {
+    color: var(--vr-success);
+}

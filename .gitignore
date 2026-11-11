@@ -71,6 +71,9 @@ publish/
 *.publishsettings
 PublishScripts/
 
+# --- Estáticos generados (el target del .csproj los copia al compilar) ---
+TiendaRopa.Web/wwwroot/img/
+
 # --- MAUI / Android ---
 *.apk
 *.aab
@@ -95,3 +98,11 @@ ehthumbs.db
 Desktop.ini
 .DS_Store
 ._*
+
+private/
+capturasDocumentacion/
+# --- Archivos .md ---
+ComoSubirProyecto.md
+guiaDocumentaciónFinal.md
+emuladorAndroid.md
+REFERENCIAS_UI.md

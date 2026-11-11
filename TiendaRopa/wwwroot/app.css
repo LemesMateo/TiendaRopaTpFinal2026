@@ -1,19 +1,10 @@
-.status-bar-safe-area {
-    display: none;
-}
+/* ============================================================
+   Estilos del host MAUI (WebView).
+   El área segura la resuelve cada plataforma por una sola vía:
+     - Android: capa nativa (Platforms/Android/MainActivity.cs).
+     - iOS/MacCatalyst/Windows: env(safe-area-inset-*) del navegador.
+   El CSS compartido (TiendaRopa.Shared) usa las variables
+   --vr-safe-*, por lo que este archivo ya no necesita hacks propios
+   (antes reservaba dos veces el inset superior con .status-bar-safe-area).
+   ============================================================ */
 
-@supports (-webkit-touch-callout: none) {
-    .status-bar-safe-area {
-        display: flex;
-        position: sticky;
-        top: 0;
-        height: env(safe-area-inset-top);
-        background-color: #F8F4ED;
-        width: 100%;
-        z-index: 1;
-    }
-
-    .flex-column, .navbar-brand {
-        padding-left: env(safe-area-inset-left);
-    }
-}

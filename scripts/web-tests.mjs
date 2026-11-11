@@ -30,6 +30,16 @@ const VIEWPORTS = [
 
 const marca = Date.now();
 
+// La app mantiene un WebSocket de Blazor Server abierto, asi que
+// 'networkidle' nunca se alcanza: se espera el circuito de Blazor.
+async function gotoApp(page, url) {
+  const ws = page.waitForEvent('websocket', { timeout: 15000 }).catch(() => null);
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  await ws;
+  await page.waitForTimeout(150);
+}
+
+
 // Los pedidos de esta suite descuentan stock REAL en SQL Server, así que las
 // corridas sucesivas lo agotan. Reponemos a ≥5 unidades por variante antes de
 // empezar (sólo desarrollo; usa el admin seed).
@@ -90,11 +100,18 @@ async function run() {
       if (msg.type() === 'error') erroresConsola.push(msg.text());
     });
 
+    // URLs de los recursos que devolvieron 404: el mensaje de consola no
+    // incluye la URL, asi que se registran aparte para poder distinguirlos.
+    const recursos404 = [];
+    page.on('response', (res) => {
+      if (res.status() === 404) recursos404.push(res.url());
+    });
+
     const email = `web.test.${vp.name}.${marca}@velvetrose.dev`;
     const password = 'Clave123!';
 
     // ---------- 1. Registro ----------
-    await page.goto(`${BASE}/registro`, { waitUntil: 'networkidle' });
+    await gotoApp(page, `${BASE}/registro`);
     await page.fill('input[autocomplete="given-name"]', 'Web');
     await page.fill('input[autocomplete="family-name"]', `Test${vp.name}`);
     await page.fill('input[autocomplete="email"]', email);
@@ -106,7 +123,7 @@ async function run() {
     report(`[${vp.name}] Registro -> redirige a inicio`, !page.url().includes('/registro'), page.url());
 
     // ---------- 2. Catálogo ----------
-    await page.goto(`${BASE}/catalogo`, { waitUntil: 'networkidle' });
+    await gotoApp(page, `${BASE}/catalogo`);
     await page.waitForSelector('.vr-product-card', { timeout: 15000 });
     const nCards = await page.locator('.vr-product-card').count();
     report(`[${vp.name}] Catálogo muestra productos`, nCards > 0, `n=${nCards}`);
@@ -165,14 +182,14 @@ async function run() {
     }
 
     // ---------- 5. Carrito ----------
-    await page.goto(`${BASE}/carrito`, { waitUntil: 'networkidle' });
+    await gotoApp(page, `${BASE}/carrito`);
     await page.waitForSelector('.cart-item, .vr-empty', { timeout: 10000 }).catch(() => {});
     const nItems = await page.locator('.cart-item').count();
     report(`[${vp.name}] Carrito con el producto agregado`, nItems > 0, `items=${nItems}`);
     await shot(page, `${vp.name}-04-carrito`);
 
     // ---------- 6. Login (sesión del registro sigue activa; lo probamos igual) ----------
-    await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
+    await gotoApp(page, `${BASE}/login`);
     const yaLogueado = !page.url().includes('/login');
     if (!yaLogueado) {
       await page.fill('input[autocomplete="email"]', email);
@@ -185,7 +202,7 @@ async function run() {
     // Login con credenciales incorrectas (debe quedarse en /login con aviso)
     const ctx2 = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
     const page2 = await ctx2.newPage();
-    await page2.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
+    await gotoApp(page2, `${BASE}/login`);
     await page2.fill('input[autocomplete="email"]', `nadie.${marca}@velvetrose.dev`);
     await page2.fill('input[autocomplete="current-password"]', 'incorrecta');
     await page2.click('button[type="submit"]');
@@ -195,7 +212,7 @@ async function run() {
     await ctx2.close();
 
     // ---------- 7. Confirmar pedido ----------
-    await page.goto(`${BASE}/carrito`, { waitUntil: 'networkidle' });
+    await gotoApp(page, `${BASE}/carrito`);
     const nAntes = await page.locator('.cart-item').count();
     if (nAntes > 0) {
       await page.click('text=Confirmar pedido');
@@ -233,26 +250,30 @@ async function run() {
     // Login como admin en contexto nuevo
     const ctxAdmin = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
     const admin = await ctxAdmin.newPage();
-    await admin.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
+    await gotoApp(admin, `${BASE}/login`);
     await admin.fill('input[autocomplete="email"]', 'admin@velvetrose.dev');
     await admin.fill('input[autocomplete="current-password"]', 'Velvet123!');
     await admin.click('button[type="submit"]');
     await admin.waitForURL((u) => !u.pathname.includes('/login'), { timeout: 15000 }).catch(() => {});
     report(`[${vp.name}] Admin login`, admin.url().includes('/admin'), admin.url());
 
-    await admin.goto(`${BASE}/admin`, { waitUntil: 'networkidle' });
+    await gotoApp(admin, `${BASE}/admin`);
     const nCardsAdmin = await admin.locator('.admin-card').count();
     report(`[${vp.name}] Panel admin`, nCardsAdmin >= 4, `secciones=${nCardsAdmin}`);
     await shot(admin, `${vp.name}-06-admin`);
 
     // Productos + variantes
-    await admin.goto(`${BASE}/admin/productos`, { waitUntil: 'networkidle' });
+    await gotoApp(admin, `${BASE}/admin/productos`);
     await admin.waitForSelector('.admin-list__item', { timeout: 15000 });
     const nProd = await admin.locator('.admin-list__item').count();
     report(`[${vp.name}] Admin lista productos`, nProd > 0, `n=${nProd}`);
 
     // Editar el primero -> formulario con variantes
     await admin.locator('.admin-list__item').first().locator('text=Editar').click();
+    // Las variantes van en un acordeon plegado por defecto: se abre para
+    // comprobar que el panel de variantes sigue disponible.
+    await admin.waitForSelector('.admin-accordion__header', { timeout: 10000 });
+    await admin.locator('.admin-accordion__header').click();
     await admin.waitForSelector('.admin-variants', { timeout: 10000 });
     const nVar = await admin.locator('.admin-variants__list li').count();
     report(`[${vp.name}] Admin variantes/stock del producto`, nVar > 0, `variantes=${nVar}`);
@@ -260,7 +281,7 @@ async function run() {
     await admin.locator('text=Cancelar').first().click().catch(() => {});
 
     // Pedidos + cambio de estado
-    await admin.goto(`${BASE}/admin/pedidos`, { waitUntil: 'networkidle' });
+    await gotoApp(admin, `${BASE}/admin/pedidos`);
     await admin.waitForSelector('.admin-pedido, .vr-empty', { timeout: 15000 }).catch(() => {});
     const nPed = await admin.locator('.admin-pedido').count();
     report(`[${vp.name}] Admin lista pedidos`, nPed > 0, `pedidos=${nPed}`);
@@ -295,22 +316,22 @@ async function run() {
     }
 
     // Catálogos admin
-    await admin.goto(`${BASE}/admin/catalogos`, { waitUntil: 'networkidle' });
+    await gotoApp(admin, `${BASE}/admin/catalogos`);
     const nSecc = await admin.locator('.admin-form').count();
     report(`[${vp.name}] Admin catálogos (categorías/talles/colores)`, nSecc >= 3, `secciones=${nSecc}`);
 
     // Cliente SIN permisos no debe ver el admin
-    await admin.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
+    await gotoApp(admin, `${BASE}/login`);
     await ctxAdmin.close();
 
     const ctxCliente = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
     const cliente = await ctxCliente.newPage();
-    await cliente.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
+    await gotoApp(cliente, `${BASE}/login`);
     await cliente.fill('input[autocomplete="email"]', email);
     await cliente.fill('input[autocomplete="current-password"]', password);
     await cliente.click('button[type="submit"]');
     await cliente.waitForTimeout(1500);
-    await cliente.goto(`${BASE}/admin`, { waitUntil: 'networkidle' });
+    await gotoApp(cliente, `${BASE}/admin`);
     const sinPermiso = await cliente.locator('text=No tenés permisos').count()
       + await cliente.locator('text=Sección restringida').count();
     report(`[${vp.name}] Cliente sin rol no ve panel admin`, sinPermiso > 0, `bloqueos=${sinPermiso}`);
@@ -318,8 +339,19 @@ async function run() {
     await ctxCliente.close();
 
     // Errores de consola (excluyo avisos conocidos de Blazor/reconnect)
-    const erroresReales = erroresConsola.filter(
-      (t) => !t.includes('blazor.websocket') && !t.includes('Failed to load resource: net::ERR'));
+    // - blazor.websocket / net::ERR: avisos de reconexión.
+    // - 404 de dotnet-browser-tools/hot-reload-settings.json: lo pide el Hot
+    //   Reload del SDK en Development y responde 404 si no hay sesión de Hot
+    //   Reload activa; no es un error de la aplicación.
+    const ignorables = ['blazor.websocket', 'hot-reload-settings.json'];
+    const soloHotReload = recursos404.length > 0
+      && recursos404.every((u) => u.includes('hot-reload-settings.json'));
+
+    const erroresReales = erroresConsola.filter((t) => {
+      if (ignorables.some((i) => t.includes(i))) return false;
+      if (soloHotReload && t.includes('status of 404')) return false;
+      return true;
+    });
     report(`[${vp.name}] Sin errores de consola`, erroresReales.length === 0,
       erroresReales.slice(0, 2).join(' | ').slice(0, 120));
 

@@ -52,6 +52,17 @@ public interface IAdminService
     Task<PedidoDto?> CambiarEstadoPedidoAsync(int id, CambiarEstadoPedidoRequest request, CancellationToken cancellationToken = default);
 
     // ---- Imágenes ----
+    /// <summary>
+    /// Sube una imagen (JPEG/PNG, hasta 5 MB) al producto y devuelve la fila
+    /// creada. El servidor valida el límite de imágenes por producto.
+    /// </summary>
+    Task<ProductoImagenDto?> SubirImagenAsync(
+        int productoId,
+        Stream contenido,
+        string nombreArchivo,
+        string contentType,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Reemplaza el orden/principal de las imágenes de un producto.</summary>
     Task<bool> GuardarImagenesAsync(int productoId, IReadOnlyList<ProductoImagenDto> imagenes, CancellationToken cancellationToken = default);
 }
