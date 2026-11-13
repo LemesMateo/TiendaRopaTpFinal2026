@@ -517,27 +517,9 @@ panel administrativo de catálogo y pedidos, solicitudes de atención con notifi
 internas, notas públicas de seguimiento, roles con 401/403 reales y las tres suites de
 prueba (API, SQL y Web).
 
-**Pendiente o no implementado** (con evidencia en el repositorio):
-
-- Recuperación de contraseña: el botón informa que estará disponible próximamente.
-- Favoritos: botón deshabilitado explícitamente en la UI.
-- Notificaciones proactivas al cliente (hoy el cliente las ve al abrir
-  "Mis solicitudes"), escalado de solicitudes a un vendedor y SignalR para el
-  contador de la campana en vivo.
-- Persistencia del historial del chat y monitoreo de la cuota de Gemini.
-- Seguimiento automático de envíos: la nota la carga el personal a mano.
-- OAuth externo, pagos online y notificaciones push: fuera de alcance por diseño.
-
 **No verificado en este entorno:**
 
 - iOS y MacCatalyst: requieren macOS para compilar y probar.
 - El selector nativo de galería de imágenes en Android (`MediaPicker`) no quedó
   verificado de extremo a extremo.
 
-**Deuda técnica conocida** (documentada en `docs/`):
-
-- El precio del pedido se lee antes del `UPDATE` condicional: la cantidad está
-  protegida por concurrencia, el precio no.
-- Las imágenes de producto son placeholders generados; deben reemplazarse por fotos
-  con derechos y, a futuro, servirse desde un CDN.
-- Dispositivo físico Android: revisar la URL en LAN y el uso de HTTP en desarrollo.
