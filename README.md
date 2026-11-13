@@ -12,14 +12,8 @@ MacCatalyst).
 
 | Perfil | Usuario | Contraseña |
 |---|---|---|
-| Administrador | `[completar con usuario de demo público]` | `[completar con contraseña descartable]` |
-| Cliente | `[completar con usuario de demo público]` | `[completar con contraseña descartable]` |
-
-> **Nota para publicar:** estas casillas deben completarse con cuentas creadas
-> expresamente para la demostración, con credenciales descartables que no se usen en
-> ningún otro entorno. En este README **no se publican** credenciales de desarrollo ni
-> de administración, claves de API, contraseñas de base de datos, cadenas de conexión
-> ni secretos JWT.
+| Administrador | `admin@velvetrose.dev` | compartida por email|
+| Cliente | `cliente@velvetrose.dev` | compartida por email |
 
 ---
 
