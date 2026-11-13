@@ -20,6 +20,12 @@ public interface IUsuarioActual
     bool EstaAutenticado { get; }
 
     bool EsAdministrador { get; }
+
+    /// <summary>True si el rol es del personal de tienda (Administrador o Vendedor).</summary>
+    bool EsPersonalTienda { get; }
+
+    /// <summary>True si el rol del usuario tiene el permiso indicado.</summary>
+    bool TienePermiso(string permiso);
 }
 
 public sealed class UsuarioActual(IHttpContextAccessor http) : IUsuarioActual
@@ -40,6 +46,11 @@ public sealed class UsuarioActual(IHttpContextAccessor http) : IUsuarioActual
     public bool EstaAutenticado => http.HttpContext?.User.Identity?.IsAuthenticated == true;
 
     public bool EsAdministrador => string.Equals(Rol, Roles.Administrador, StringComparison.Ordinal);
+
+    public bool EsPersonalTienda =>
+        EsAdministrador || string.Equals(Rol, Roles.Vendedor, StringComparison.Ordinal);
+
+    public bool TienePermiso(string permiso) => PermisosPorRol.Tiene(Rol, permiso);
 }
 
 /// <summary>Exige que el usuario esté autenticado con el rol Administrador.</summary>
@@ -56,6 +67,55 @@ public sealed class AdministradorHandler : AuthorizationHandler<AdministradorReq
                 context.User.FindFirst(TokenService.RolClaim)?.Value,
                 Roles.Administrador,
                 StringComparison.Ordinal))
+        {
+            context.Succeed(requirement);
+        }
+
+        return Task.CompletedTask;
+    }
+}
+
+/// <summary>
+/// Exige rol del personal de tienda (Administrador o Vendedor).
+/// </summary>
+public sealed class PersonalTiendaRequirement : IAuthorizationRequirement;
+
+public sealed class PersonalTiendaHandler : AuthorizationHandler<PersonalTiendaRequirement>
+{
+    protected override Task HandleRequirementAsync(
+        AuthorizationHandlerContext context,
+        PersonalTiendaRequirement requirement)
+    {
+        if (context.User.Identity?.IsAuthenticated == true
+            && PermisosPorRol.De(context.User.FindFirst(TokenService.RolClaim)?.Value)
+                .Any(p => p is Permisos.VerPedidos or Permisos.VerSolicitudes))
+        {
+            context.Succeed(requirement);
+        }
+
+        return Task.CompletedTask;
+    }
+}
+
+/// <summary>
+/// Exige un permiso concreto (ver <see cref="Permisos"/>). El permiso sale del
+/// rol del JWT; el cliente nunca decide sus permisos.
+/// </summary>
+public sealed class PermisoRequirement : IAuthorizationRequirement
+{
+    public required string Permiso { get; init; }
+}
+
+public sealed class PermisoHandler : AuthorizationHandler<PermisoRequirement>
+{
+    protected override Task HandleRequirementAsync(
+        AuthorizationHandlerContext context,
+        PermisoRequirement requirement)
+    {
+        if (context.User.Identity?.IsAuthenticated == true
+            && PermisosPorRol.Tiene(
+                context.User.FindFirst(TokenService.RolClaim)?.Value,
+                requirement.Permiso))
         {
             context.Succeed(requirement);
         }

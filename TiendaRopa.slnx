@@ -2,6 +2,7 @@
   <Project Path="TiendaRopa.Api/TiendaRopa.Api.csproj" />
   <Project Path="TiendaRopa.Contracts/TiendaRopa.Contracts.csproj" />
   <Project Path="TiendaRopa.Shared/TiendaRopa.Shared.csproj" />
+  <Project Path="TiendaRopa.Tests/TiendaRopa.Tests.csproj" />
   <Project Path="TiendaRopa.Web/TiendaRopa.Web.csproj" />
   <Project Path="TiendaRopa/TiendaRopa.csproj" />
 </Solution>

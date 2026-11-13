@@ -138,6 +138,7 @@ public sealed class AuthService(
         Nombre = usuario.Cliente?.Nombre ?? usuario.Email,
         Apellido = usuario.Cliente?.Apellido ?? string.Empty,
         Rol = rol,
+        Permisos = PermisosPorRol.De(rol),
         IdCliente = idCliente,
         Telefono = usuario.Cliente?.Telefono,
         Direccion = usuario.Cliente?.Direccion,

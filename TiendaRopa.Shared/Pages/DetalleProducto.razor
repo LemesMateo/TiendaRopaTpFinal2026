@@ -4,6 +4,7 @@
 @inject ICatalogoService CatalogoApi
 @inject CarritoService Carrito
 @inject NavigationManager Navigation
+@inject TiendaRopa.Shared.Services.ChatContexto ChatContexto
 
 <PageTitle>@(producto?.Nombre ?? "Producto") — Velvet Rose Boutique</PageTitle>
 
@@ -294,6 +295,10 @@ else
             colorSeleccionado = inicial?.Color;
             cantidad = 1;
             imagenSeleccionada = producto.Imagenes.FirstOrDefault()?.Id;
+
+            // El chat abierto desde acá ya sabe qué producto se está mirando
+            // (el backend valida el id antes de usarlo).
+            ChatContexto.IdProducto = producto.Id;
         }
         catch (Exception ex)
         {

@@ -1,0 +1,468 @@
+@page "/admin/solicitudes"
+@using TiendaRopa.Contracts.Asistente
+@using TiendaRopa.Contracts.Identidad
+@using TiendaRopa.Contracts.Solicitudes
+@using TiendaRopa.Shared.Services
+@inject ISolicitudService SolicitudesApi
+@inject INotificacionService NotificacionesApi
+@inject SesionService Sesion
+@implements IDisposable
+
+<PageTitle>Solicitudes — Administración — Velvet Rose Boutique</PageTitle>
+
+@* Panel de solicitudes de atención (Administrador y Vendedor).
+   Campana con contador de pendientes, listado, detalle, respuesta y cierre. *@
+
+@if (!sesionCargada)
+{
+    <LoadingState Text="Verificando tu sesión..." />
+}
+else if (!Sesion.Iniciada)
+{
+    <EmptyState Icon="lock"
+                 Title="Iniciá sesión para ver las solicitudes"
+                 Description="Las solicitudes de los clientes son información reservada al equipo de la tienda.">
+        <AppButton Variant="primary" Icon="login" Href="/login?redirect=/admin/solicitudes">
+            Iniciar sesión
+        </AppButton>
+    </EmptyState>
+}
+else if (!Sesion.TienePermiso(Permisos.VerSolicitudes))
+{
+    <EmptyState Icon="admin_panel_settings"
+                 Title="No tenés permisos"
+                 Description="Tu cuenta no puede ver las solicitudes de atención.">
+        <AppButton Variant="outline" Icon="home" Href="/">
+            Volver al inicio
+        </AppButton>
+    </EmptyState>
+}
+else
+{
+    <header class="admin-head">
+        <div>
+            <h1>Solicitudes</h1>
+            <p class="page-sub">Consultas, mensajes y pedidos de reposición de los clientes.</p>
+        </div>
+
+        <div class="sol-bell">
+            <button type="button"
+                    class="sol-bell__btn"
+                    @onclick="AlternarNotificaciones"
+                    aria-label="@($"Notificaciones ({pendientes} pendientes)")"
+                    aria-expanded="@notificacionesAbiertas"
+                    aria-controls="sol-notificaciones">
+                <AppIcon Icon="notifications" Size="24" />
+                @if (pendientes > 0)
+                {
+                    <span class="sol-bell__badge" aria-hidden="true">@pendientes</span>
+                }
+            </button>
+
+            @if (notificacionesAbiertas)
+            {
+                <div id="sol-notificaciones" class="sol-bell__panel" role="region" aria-label="Notificaciones">
+                    <div class="sol-bell__head">
+                        <strong>Notificaciones</strong>
+                        @if (pendientes > 0)
+                        {
+                            <button type="button" class="sol-bell__leer-todas" @onclick="MarcarTodasLeidasAsync">
+                                Marcar leídas
+                            </button>
+                        }
+                    </div>
+
+                    @if (notificaciones.Count == 0)
+                    {
+                        <p class="sol-bell__empty">No hay notificaciones.</p>
+                    }
+                    else
+                    {
+                        <ul class="sol-bell__lista">
+                            @foreach (var notificacion in notificaciones)
+                            {
+                                <li>
+                                    <button type="button"
+                                            class="sol-bell__item @(notificacion.Leida ? "" : "is-pendiente")"
+                                            @onclick="(() => AbrirNotificacionAsync(notificacion))">
+                                        <span class="sol-bell__item-texto">@notificacion.Mensaje</span>
+                                        <span class="sol-bell__item-meta">
+                                            @notificacion.SolicitudTipo · @notificacion.SolicitudEstado
+                                        </span>
+                                    </button>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            }
+        </div>
+    </header>
+
+    <div class="admin-toolbar">
+        <label class="admin-filter">
+            <span>Estado</span>
+            <select @bind="filtroEstado" @bind:after="CargarAsync">
+                <option value="">Todas</option>
+                @foreach (var estado in SolicitudEstados.Todos)
+                {
+                    <option value="@estado">@estado</option>
+                }
+            </select>
+        </label>
+    </div>
+
+    @if (mensaje is not null)
+    {
+        <p class="admin-notice @(esError ? "is-error" : "")" role="alert">@mensaje</p>
+    }
+
+    @if (cargando)
+    {
+        <LoadingState Text="Cargando solicitudes..." />
+    }
+    else if (solicitudes.Count == 0)
+    {
+        <EmptyState Icon="forum"
+                    Title="Sin solicitudes"
+                    Description="Cuando un cliente deje una consulta o pida una reposición, aparecerá acá." />
+    }
+    else
+    {
+        <ul class="admin-list sol-list">
+            @foreach (var solicitud in solicitudes)
+            {
+                <li class="sol-item @(detalleId == solicitud.Id ? "is-abierto" : "")">
+                    <button type="button"
+                            class="sol-item__head"
+                            @onclick="(() => AbrirDetalleAsync(solicitud.Id))"
+                            aria-expanded="@(detalleId == solicitud.Id)">
+                        <span class="sol-item__badges">
+                            <StatusBadge Text="@TipoTexto(solicitud.Tipo)" Tone="@TipoTone(solicitud.Tipo)" />
+                            <StatusBadge Text="@solicitud.Estado" Tone="@EstadoTone(solicitud.Estado)" />
+                        </span>
+                        <span class="sol-item__titulo">@solicitud.ClienteNombre</span>
+                        <span class="sol-item__meta">
+                            @solicitud.FechaCreacion.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                            @if (!string.IsNullOrWhiteSpace(solicitud.ProductoNombre))
+                            {
+                                <span> · @solicitud.ProductoNombre</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(solicitud.PedidoDescripcion))
+                            {
+                                <span> · pedido #@solicitud.PedidoDescripcion</span>
+                            }
+                        </span>
+                        <AppIcon Icon="@(detalleId == solicitud.Id ? "expand_less" : "expand_more")" Size="20" />
+                    </button>
+
+                    @if (detalleId == solicitud.Id)
+                    {
+                        <div class="sol-detail">
+                            <p class="sol-detail__texto">@solicitud.Mensaje</p>
+
+                            <dl class="sol-detail__datos">
+                                @if (!string.IsNullOrWhiteSpace(solicitud.Talle))
+                                {
+                                    <div><dt>Talle</dt><dd>@solicitud.Talle</dd></div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(solicitud.Color))
+                                {
+                                    <div><dt>Color</dt><dd>@solicitud.Color</dd></div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(solicitud.TelefonoContacto))
+                                {
+                                    <div><dt>Teléfono</dt><dd>@solicitud.TelefonoContacto</dd></div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(solicitud.ClienteEmail))
+                                {
+                                    <div><dt>Email</dt><dd>@solicitud.ClienteEmail</dd></div>
+                                }
+                            </dl>
+
+                            @if (!string.IsNullOrWhiteSpace(solicitud.Respuesta))
+                            {
+                                <div class="sol-detail__respuesta">
+                                    <strong>Respuesta enviada</strong>
+                                    <p>@solicitud.Respuesta</p>
+                                    @if (solicitud.FechaResolucion is { } fecha)
+                                    {
+                                        <small>@fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                                    }
+                                </div>
+                            }
+
+                            @if (Sesion.TienePermiso(Permisos.ResponderSolicitudes))
+                            {
+                                <div class="sol-detail__form">
+                                    <label class="admin-notas__label" for="resp-@solicitud.Id">
+                                        @(solicitud.Respuesta is null ? "Responder al cliente" : "Actualizar la respuesta")
+                                    </label>
+                                    <textarea id="resp-@solicitud.Id"
+                                              class="admin-notas__textarea sol-detail__textarea"
+                                              @bind="textoRespuesta"
+                                              @bind:event="oninput"
+                                              rows="3"
+                                              maxlength="1000"
+                                              placeholder="Escribí la respuesta para el cliente..."></textarea>
+                                    <div class="sol-detail__acciones">
+                                        <AppButton Variant="primary"
+                                                   Size="sm"
+                                                   Icon="send"
+                                                   Disabled="@(string.IsNullOrWhiteSpace(textoRespuesta) || enviando)"
+                                                   OnClick="(() => ResponderAsync(solicitud.Id))">
+                                            @(enviando ? "Enviando…" : "Enviar respuesta")
+                                        </AppButton>
+
+                                        <label class="sol-detail__select">
+                                            <span>Estado</span>
+                                            <select @bind="estadoSeleccionado" @bind:event="onchange">
+                                                @foreach (var estado in SolicitudEstados.Todos)
+                                                {
+                                                    <option value="@estado">@estado</option>
+                                                }
+                                            </select>
+                                        </label>
+
+                                        <AppButton Variant="outline"
+                                                   Size="sm"
+                                                   Icon="check_circle"
+                                                   Disabled="@(enviando || solicitud.Estado == EstadoCerrada)"
+                                                   OnClick="(() => CambiarEstadoAsync(solicitud.Id, EstadoCerrada))">
+                                            Cerrar
+                                        </AppButton>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </li>
+            }
+        </ul>
+    }
+}
+
+@code {
+    private const string EstadoCerrada = "Cerrada";
+
+    private bool sesionCargada;
+    private bool cargando = true;
+    private bool enviando;
+    private string? mensaje;
+    private bool esError;
+    private string filtroEstado = "";
+
+    private List<SolicitudAtencionDto> solicitudes = [];
+    private int? detalleId;
+    private string textoRespuesta = string.Empty;
+    private string estadoSeleccionado = SolicitudEstados.EnRevision;
+
+    private bool notificacionesAbiertas;
+    private int pendientes;
+    private List<NotificacionDto> notificaciones = [];
+
+    protected override void OnInitialized() => Sesion.Cambio += OnSesionCambiada;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!sesionCargada)
+        {
+            await Sesion.CargarAsync();
+            sesionCargada = true;
+            StateHasChanged();
+
+            if (Sesion.TienePermiso(Permisos.VerSolicitudes))
+            {
+                await CargarAsync();
+                await CargarNotificacionesAsync();
+                StateHasChanged();
+            }
+        }
+    }
+
+    private void OnSesionCambiada() => InvokeAsync(StateHasChanged);
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        StateHasChanged();
+
+        try
+        {
+            solicitudes = (await SolicitudesApi.GetSolicitudesAsync(
+                string.IsNullOrEmpty(filtroEstado) ? null : filtroEstado)).ToList();
+            mensaje = null;
+        }
+        catch (Exception)
+        {
+            solicitudes = [];
+            mensaje = "No pudimos conectar con la tienda.";
+            esError = true;
+        }
+        finally
+        {
+            cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarNotificacionesAsync()
+    {
+        try
+        {
+            var resumen = await NotificacionesApi.GetNotificacionesAsync(true);
+            if (resumen is not null)
+            {
+                notificaciones = resumen.Items.ToList();
+                pendientes = resumen.Pendientes;
+            }
+        }
+        catch (Exception)
+        {
+            // La campana es secundaria: si falla, el panel sigue usable.
+        }
+    }
+
+    private void AlternarNotificaciones()
+    {
+        notificacionesAbiertas = !notificacionesAbiertas;
+
+        if (notificacionesAbiertas)
+        {
+            _ = CargarNotificacionesAsync();
+        }
+    }
+
+    private async Task MarcarTodasLeidasAsync()
+    {
+        await NotificacionesApi.MarcarTodasLeidasAsync();
+        await CargarNotificacionesAsync();
+        StateHasChanged();
+    }
+
+    private async Task AbrirNotificacionAsync(NotificacionDto notificacion)
+    {
+        if (!notificacion.Leida)
+        {
+            await NotificacionesApi.MarcarLeidaAsync(notificacion.Id);
+            await CargarNotificacionesAsync();
+        }
+
+        await AbrirDetalleAsync(notificacion.IdSolicitud);
+    }
+
+    private async Task AbrirDetalleAsync(int id)
+    {
+        detalleId = detalleId == id ? null : id;
+        textoRespuesta = string.Empty;
+        estadoSeleccionado = SolicitudEstados.EnRevision;
+        StateHasChanged();
+
+        if (detalleId is null)
+        {
+            return;
+        }
+
+        var detalle = await SolicitudesApi.GetSolicitudAsync(id);
+        if (detalle is not null)
+        {
+            estadoSeleccionado = detalle.Estado;
+        }
+    }
+
+    private async Task ResponderAsync(int id)
+    {
+        if (string.IsNullOrWhiteSpace(textoRespuesta) || enviando)
+        {
+            return;
+        }
+
+        enviando = true;
+        StateHasChanged();
+
+        try
+        {
+            var actualizada = await SolicitudesApi.ResponderAsync(id, textoRespuesta);
+            if (actualizada is null)
+            {
+                mensaje = SolicitudesApi.UltimoError ?? "No pudimos enviar la respuesta.";
+                esError = true;
+            }
+            else
+            {
+                mensaje = $"Respuesta enviada en la solicitud #{id}.";
+                esError = false;
+                textoRespuesta = "";
+                await CargarAsync();
+                await CargarNotificacionesAsync();
+            }
+        }
+        catch (Exception)
+        {
+            mensaje = "No pudimos conectar con la tienda.";
+            esError = true;
+        }
+        finally
+        {
+            enviando = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CambiarEstadoAsync(int id, string estado)
+    {
+        enviando = true;
+        StateHasChanged();
+
+        try
+        {
+            var actualizada = await SolicitudesApi.CambiarEstadoAsync(id, estado);
+            if (actualizada is null)
+            {
+                mensaje = SolicitudesApi.UltimoError ?? "No pudimos cambiar el estado.";
+                esError = true;
+            }
+            else
+            {
+                mensaje = $"Solicitud #{id}: estado ahora es \"{actualizada.Estado}\".";
+                esError = false;
+                await CargarAsync();
+            }
+        }
+        catch (Exception)
+        {
+            mensaje = "No pudimos conectar con la tienda.";
+            esError = true;
+        }
+        finally
+        {
+            enviando = false;
+            StateHasChanged();
+        }
+    }
+
+    private static string TipoTexto(string tipo) => tipo switch
+    {
+        SolicitudTipos.ConsultaPedido => "Consulta de pedido",
+        SolicitudTipos.SolicitudReposicion => "Reposición",
+        _ => "Consulta",
+    };
+
+    private static string TipoTone(string tipo) => tipo switch
+    {
+        SolicitudTipos.ConsultaPedido => "info",
+        SolicitudTipos.SolicitudReposicion => "warning",
+        _ => "neutral",
+    };
+
+    private static string EstadoTone(string estado) => estado switch
+    {
+        SolicitudEstados.Abierta => "primary",
+        SolicitudEstados.EnRevision => "info",
+        SolicitudEstados.Respondida => "success",
+        SolicitudEstados.Cerrada => "neutral",
+        _ => "neutral",
+    };
+
+    public void Dispose() => Sesion.Cambio -= OnSesionCambiada;
+}

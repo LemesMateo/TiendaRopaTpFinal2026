@@ -33,9 +33,11 @@ $dbs = Q "SELECT name FROM sys.databases ORDER BY name;"
 Report 'Existe VelvetRoseDev en la instancia' ($dbs -match 'VelvetRoseDev') ($dbs -replace "`n", ', ')
 Report 'MSSQLLocalDB NO es la base principal' ($dbs -notmatch 'VelvetRoseDev' -or $srv -notmatch 'MSSQLLocalDB') "OK"
 
-Write-Host '=== 2. ESQUEMA (12 TABLAS) ===' -ForegroundColor Cyan
+Write-Host '=== 2. ESQUEMA (16 TABLAS) ===' -ForegroundColor Cyan
+# El esquema creció con Solicitudes/Notificaciones/PedidoNota: el conteo exacto
+# se reemplaza por las tablas esenciales del catálogo y del historial.
 $nTablas = [int](Q "SELECT COUNT(*) FROM sys.tables WHERE name <> '__EFMigrationsHistory';")
-Report '12 tablas de negocio' ($nTablas -eq 12) "n=${nTablas}"
+Report 'Tablas de negocio (>= 16)' ($nTablas -ge 16) "n=${nTablas}"
 
 $esperadas = @('Categoria', 'Cliente', 'Color', 'EstadoPedido', 'Pedido', 'PedidoDetalle',
     'Producto', 'ProductoImagen', 'ProductoVariante', 'Rol', 'Talle', 'Usuario')
@@ -82,7 +84,7 @@ $nVariantes = [int](Q 'SELECT COUNT(*) FROM ProductoVariante;')
 Report '>= 4 categorías seed (las pruebas añaden más)' ($nCategorias -ge 4) "n=$nCategorias"
 Report '>= 4 talles y >= 4 colores seed' ($nTalles -ge 4 -and $nColores -ge 4) "talles=$nTalles colores=$nColores"
 Report '5 estados de pedido' ($nEstados -eq 5) "n=$nEstados"
-Report '2 roles (Administrador y Cliente)' ($nRoles -eq 2) "n=$nRoles"
+Report 'Roles Administrador y Cliente presentes' (($nRoles -ge 2) -and ((Q "SELECT Nombre FROM Rol;") -match 'Administrador') -and ((Q "SELECT Nombre FROM Rol;") -match 'Cliente')) "n=$nRoles"
 Report '>= 9 productos y >= 26 variantes seed' ($nProductos -ge 9 -and $nVariantes -ge 26) "productos=$nProductos variantes=$nVariantes"
 
 $estadosNombre = Q "SELECT nombre FROM EstadoPedido ORDER BY IdEstadoPedido;"

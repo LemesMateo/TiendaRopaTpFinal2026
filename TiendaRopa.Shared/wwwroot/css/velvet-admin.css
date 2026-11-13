@@ -70,6 +70,22 @@
     color: var(--vr-danger);
 }
 
+/* Aviso del formulario de producto: vive dentro de la tarjeta, justo encima
+   de Guardar/Cancelar. Mantiene el color de error existente y se separa del
+   borde superior con el mismo espaciado que el resto del formulario. */
+.admin-notice--form {
+    margin: 0;
+    border: 1px solid currentColor;
+    font-weight: 500;
+}
+
+/* El aviso recibe foco por código (tabindex="-1") para anunciarse; no debe
+   mostrar el anillo de foco de un control interactivo, sólo uno suave. */
+.admin-notice--form:focus {
+    outline: 2px solid var(--vr-focus);
+    outline-offset: 2px;
+}
+
 /* ---- Formularios ---- */
 .admin-form {
     background: var(--vr-surface);
@@ -588,4 +604,109 @@
     padding-top: var(--vr-space-2);
     font-weight: 700;
     color: var(--vr-plum);
+}
+
+/* ---- Actualizaciones públicas del pedido ---- */
+.admin-notas {
+    margin-top: var(--vr-space-3);
+    padding: var(--vr-space-3);
+    border: 1px solid var(--vr-lavender);
+    border-radius: var(--vr-radius-md);
+    background-color: var(--vr-surface-soft);
+}
+
+.admin-notas__title {
+    display: flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    margin: 0 0 var(--vr-space-3);
+    font-family: var(--vr-font-body);
+    font-size: var(--vr-fs-sm);
+    font-weight: 700;
+    color: var(--vr-lavender-text);
+}
+
+.admin-notas__empty {
+    margin: 0 0 var(--vr-space-3);
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text-muted);
+}
+
+.admin-notas__lista {
+    list-style: none;
+    margin: 0 0 var(--vr-space-3);
+    padding: 0;
+    display: grid;
+    gap: var(--vr-space-2);
+}
+
+.admin-notas__item {
+    padding: var(--vr-space-2) var(--vr-space-3);
+    border-radius: var(--vr-radius-sm);
+    background-color: var(--vr-surface);
+    border: 1px solid var(--vr-border);
+}
+
+.admin-notas__texto {
+    margin: 0;
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text);
+}
+
+.admin-notas__meta {
+    margin: var(--vr-space-1) 0 0;
+    font-size: var(--vr-fs-xs);
+    color: var(--vr-text-muted);
+}
+
+.admin-notas__form {
+    display: grid;
+    gap: var(--vr-space-2);
+    padding-top: var(--vr-space-3);
+    border-top: 1px dashed var(--vr-border-strong);
+}
+
+.admin-notas__label {
+    font-size: var(--vr-fs-xs);
+    font-weight: 700;
+    color: var(--vr-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.admin-notas__textarea,
+.admin-notas__input {
+    width: 100%;
+    min-height: var(--vr-tap-min);
+    padding: 0.6rem 0.75rem;
+    border: 1.5px solid var(--vr-border-strong);
+    border-radius: var(--vr-radius-sm);
+    background-color: var(--vr-surface);
+    color: var(--vr-text);
+    font: inherit;
+    font-size: var(--vr-fs-sm);
+}
+
+.admin-notas__textarea {
+    resize: vertical;
+    min-height: calc(var(--vr-tap-min) * 1.6);
+}
+
+.admin-notas__textarea:focus,
+.admin-notas__input:focus {
+    outline: 2px solid var(--vr-focus);
+    outline-offset: 1px;
+    border-color: var(--vr-primary);
+}
+
+.admin-notas__campos {
+    display: grid;
+    gap: var(--vr-space-2);
+    grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 560px) {
+    .admin-notas__campos {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }

@@ -1,0 +1,712 @@
+﻿@* Asistente conversacional de Velvet Rose (chatbot).
+   Componente reutilizable, mobile-first: botón flotante en la esquina inferior
+   derecha y panel lateral en escritorio / pantalla completa en móvil.
+
+   La identidad la resuelve el backend a partir del JWT: el componente NUNCA
+   envía IdCliente. Sólo manda el contexto (producto/pedido), que el backend
+   valida antes de usarlo. *@
+
+@using TiendaRopa.Contracts.Asistente
+@using TiendaRopa.Contracts.Solicitudes
+@using TiendaRopa.Shared.Services
+@implements IAsyncDisposable
+@inject IChatService ChatApi
+@inject SesionService Sesion
+@inject ChatContexto Contexto
+@inject IJSRuntime Js
+
+<button type="button"
+        class="vr-chat__fab @(!abierto ? "is-visible" : "")"
+        @onclick="Alternar"
+        aria-label="Abrir el chat de atención al cliente"
+        aria-expanded="@abierto"
+        aria-controls="vr-chat-panel">
+    <AppIcon Icon="@(abierto ? "close" : "support_agent")" Size="28" />
+</button>
+
+@if (abierto)
+{
+    <div class="vr-chat__backdrop" @onclick="Cerrar"></div>
+}
+
+<section id="vr-chat-panel"
+         class="vr-chat__panel @(abierto ? "is-open" : "")"
+         aria-label="Chat de atención al cliente"
+         aria-hidden="@(!abierto)"
+         inert="@(abierto ? null : "true")">
+
+    <header class="vr-chat__head">
+        <div class="vr-chat__brand">
+            <span class="vr-chat__avatar" aria-hidden="true">
+                <AppIcon Icon="support_agent" Size="22" />
+            </span>
+            <div class="vr-chat__titles">
+                <p class="vr-chat__name">Asistente Velvet Rose</p>
+                <p class="vr-chat__status">
+                    @(cargando ? "Escribiendo..." : "Te respondemos enseguida")
+                </p>
+            </div>
+        </div>
+        <button type="button"
+                class="vr-chat__close"
+                @onclick="Cerrar"
+                aria-label="Cerrar el chat">
+            <AppIcon Icon="close" Size="22" />
+        </button>
+    </header>
+
+    <div class="vr-chat__body" @ref="cuerpoChat">
+        @if (mensajes.Count == 0)
+        {
+            <div class="vr-chat__intro">
+                <span class="vr-chat__intro-icon" aria-hidden="true">
+                    <AppIcon Icon="chat" Size="34" />
+                </span>
+                <p class="vr-chat__intro-title">¿En qué te ayudamos?</p>
+                <p class="vr-chat__intro-text">
+                    Consultá el estado de tus pedidos, el stock de una prenda o
+                    resolvé dudas de la tienda.
+                </p>
+            </div>
+        }
+
+        @foreach (var mensaje in mensajes)
+        {
+            <div class="vr-chat__msg vr-chat__msg--@mensaje.Rol @(mensaje.Error ? "is-error" : "")"
+                 role="listitem">
+                <div class="vr-chat__bubble">
+                    @if (!string.IsNullOrWhiteSpace(mensaje.Texto))
+                    {
+                        <p class="vr-chat__text">@mensaje.Texto</p>
+                    }
+
+                    @if (mensaje.RequiereAutenticacion)
+                    {
+                        <div class="vr-chat__login">
+                            <AppButton Variant="primary"
+                                       Size="sm"
+                                       Icon="login"
+                                       Href="@("/login?redirect=" + Uri.EscapeDataString("/"))">
+                                Iniciar sesión
+                            </AppButton>
+                            <p class="vr-chat__login-note">
+                            Iniciá sesión para consultar tus pedidos y tus datos.
+                            </p>
+                        </div>
+                    }
+
+                    @if (mensaje.OpcionesPedido.Count > 0)
+                    {
+                        <div class="vr-chat__options" role="group" aria-label="Elegí un pedido">
+                            @foreach (var opcion in mensaje.OpcionesPedido)
+                            {
+                                <button type="button"
+                                        class="vr-chat__option"
+                                        @onclick="(() => ElegirPedido(opcion.Id))">
+                                    <AppIcon Icon="receipt_long" Size="18" />
+                                    <span class="vr-chat__option-text">
+                                        <strong>@opcion.Etiqueta</strong>
+                                        <small>@opcion.Estado · @opcion.Fecha</small>
+                                    </span>
+                                </button>
+                            }
+                        </div>
+                    }
+
+                    @if (mensaje.Acciones.Count > 0)
+                    {
+                        <div class="vr-chat__actions" role="group" aria-label="Acciones propuestas">
+                            @foreach (var accion in mensaje.Acciones)
+                            {
+                                <div class="vr-chat__action">
+                                    <div class="vr-chat__action-head">
+                                        <AppIcon Icon="bolt" Size="18" />
+                                        <strong>@accion.Titulo</strong>
+                                    </div>
+                                    <p class="vr-chat__action-detail">@accion.Detalle</p>
+
+                                    @if (accion.IdPropuesta is { } idPropuesta)
+                                    {
+                                        @* Solicitud preparada: vista previa con
+                                           Confirmar / Cancelar. Sólo el botón
+                                           Confirmar llama al endpoint de escritura. *@
+                                        <p class="vr-chat__action-note">
+                                            <AppIcon Icon="info" Size="14" />
+                                            Esto todavía NO se envió. Revisá y confirmá si querés que la tienda lo reciba.
+                                        </p>
+
+                                        @if (!string.IsNullOrWhiteSpace(accion.TelefonoEnmascarado))
+                                        {
+                                            <p class="vr-chat__action-telefono">
+                                                <AppIcon Icon="phone" Size="16" />
+                                                Teléfono de contacto: <strong>@accion.TelefonoEnmascarado</strong>
+                                                @if (accion.RequiereConfirmarTelefono)
+                                                {
+                                                    <span>· confirmá que sea correcto</span>
+                                                }
+                                            </p>
+                                        }
+
+                                        @if (accion.Estado == "propuesta")
+                                        {
+                                            <div class="vr-chat__action-btns">
+                                                <button type="button"
+                                                        class="vr-chat__action-btn is-confirm"
+                                                        @onclick="(() => ConfirmarSolicitudAsync(accion))">
+                                                    Confirmar y enviar
+                                                </button>
+                                                <button type="button"
+                                                        class="vr-chat__action-btn"
+                                                        @onclick="(() => CancelarSolicitudAsync(accion))">
+                                                    Cancelar
+                                                </button>
+                                            </div>
+
+                                            <button type="button"
+                                                    class="vr-chat__action-link"
+                                                    @onclick="(() => MostrarTelefonoAsync(accion))">
+                                                <AppIcon Icon="edit" Size="14" />
+                                                Usar otro teléfono
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <p class="vr-chat__action-state" role="status">
+                                                @(accion.Estado == "confirmada"
+                                                    ? "¡Solicitud enviada! La tienda te va a responder."
+                                                    : "Solicitud cancelada: no se envió nada.")
+                                            </p>
+                                        }
+
+                                        @if (editandoTelefono == idPropuesta)
+                                        {
+                                            <div class="vr-chat__action-form">
+                                                <label class="vr-chat__action-label" for="tel-@idPropuesta">
+                                                    Nuevo teléfono de contacto
+                                                </label>
+                                                <input id="tel-@idPropuesta"
+                                                       type="tel"
+                                                       class="vr-chat__action-input"
+                                                       @bind="telefonoNuevo"
+                                                       @bind:event="oninput"
+                                                       inputmode="tel"
+                                                       autocomplete="tel"
+                                                       maxlength="50"
+                                                       placeholder="341-555-0000" />
+                                                <label class="vr-chat__action-check">
+                                                    <input type="checkbox"
+                                                           @bind="guardarTelefonoEnPerfil" />
+                                                    <span>Guardar este número en mi perfil</span>
+                                                </label>
+                                                <div class="vr-chat__action-btns">
+                                                    <button type="button"
+                                                            class="vr-chat__action-btn is-confirm"
+                                                            @onclick="(() => GuardarTelefonoAsync(accion))">
+                                                        Guardar teléfono
+                                                    </button>
+                                                    <button type="button"
+                                                            class="vr-chat__action-btn"
+                                                            @onclick="() => editandoTelefono = null">
+                                                        Cancelar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <p class="vr-chat__action-note">
+                                            <AppIcon Icon="info" Size="14" />
+                                            Vista previa: todavía no se envía ninguna solicitud.
+                                        </p>
+                                        <div class="vr-chat__action-btns">
+                                            <button type="button"
+                                                    class="vr-chat__action-btn is-confirm"
+                                                    @onclick="(() => ConfirmarAccion(accion))">
+                                                Confirmar
+                                            </button>
+                                            <button type="button"
+                                                    class="vr-chat__action-btn"
+                                                    @onclick="(() => CancelarAccion(accion))">
+                                                Cancelar
+                                            </button>
+                                        </div>
+                                        @if (accion.Estado != "propuesta")
+                                        {
+                                            <p class="vr-chat__action-state" role="status">
+                                                @(accion.Estado == "confirmada"
+                                                    ? "Acción confirmada en el chat (aún sin enviar)."
+                                                    : "Acción cancelada.")
+                                            </p>
+                                        }
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (cargando)
+        {
+            <div class="vr-chat__msg vr-chat__msg--assistant" role="listitem">
+                <div class="vr-chat__bubble vr-chat__bubble--typing" aria-label="El asistente está escribiendo">
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                </div>
+            </div>
+        }
+
+        @if (sugerencias.Count > 0 && !cargando)
+        {
+            <div class="vr-chat__suggestions" role="group" aria-label="Sugerencias">
+                @foreach (var sugerencia in sugerencias)
+                {
+                    <button type="button" class="vr-chat__chip" @onclick="(() => Enviar(sugerencia))">
+                        @sugerencia
+                    </button>
+                }
+            </div>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(avisoAccion))
+    {
+        <p class="vr-chat__aviso" role="status">
+            <AppIcon Icon="info" Size="16" />
+            @avisoAccion
+        </p>
+    }
+
+    <form class="vr-chat__composer" @onsubmit="EnviarAsync" @onsubmit:preventDefault>
+        <label class="vr-chat__sr-label" for="vr-chat-input">Escribí tu consulta</label>
+        <input id="vr-chat-input"
+               type="text"
+               class="vr-chat__input"
+               @bind="texto"
+               @bind:event="oninput"
+               placeholder="Escribí tu consulta..."
+               maxlength="2000"
+               disabled="@cargando"
+               autocomplete="off" />
+        <button type="submit"
+                class="vr-chat__send"
+                disabled="@(cargando || string.IsNullOrWhiteSpace(texto))"
+                aria-label="Enviar mensaje">
+            <AppIcon Icon="send" Size="22" />
+        </button>
+    </form>
+</section>
+
+@code {
+    private sealed class MensajeChat
+    {
+        public required string Rol { get; init; }
+        public required string Texto { get; init; }
+        public bool Error { get; init; }
+        public bool RequiereAutenticacion { get; init; }
+        public List<ChatPedidoOpcionDto> OpcionesPedido { get; init; } = [];
+        public List<AccionPropuestaDto> Acciones { get; init; } = [];
+    }
+
+    private const int MaxMensajes = 60;
+
+    private bool abierto;
+    private bool cargando;
+    private string texto = string.Empty;
+    private ElementReference cuerpoChat;
+
+    // ---- Solicitudes (vista previa + confirmación) ----
+    private bool enviandoSolicitud;
+    private int? editandoTelefono;
+    private string telefonoNuevo = string.Empty;
+    private bool guardarTelefonoEnPerfil;
+    private string? avisoAccion;
+
+
+    /// <summary>Historial de la conversación (se conserva al cerrar y reabrir).</summary>
+    private readonly List<MensajeChat> mensajes = [];
+
+    /// <summary>Sugerencias que se muestran bajo el último mensaje.</summary>
+    private readonly List<string> sugerencias = [.. ChatSugerencias.Iniciales];
+
+    /// <summary>
+    /// Permite que una página indique el producto que está mostrando, para que
+    /// el asistente pueda responder sobre esa prenda sin pedirlo de nuevo.
+    /// </summary>
+    [Parameter]
+    public int? IdProductoContexto { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!abierto || !cargando)
+        {
+            return;
+        }
+
+        await DesplazarAlFinalAsync();
+    }
+
+    private void Alternar()
+    {
+        if (abierto)
+        {
+            Cerrar();
+        }
+        else
+        {
+            abierto = true;
+            StateHasChanged();
+            _ = EnfocarEntradaAsync();
+            _ = CargarPropuestasAsync();
+        }
+    }
+
+    /// <summary>
+    /// Carga las propuestas de solicitud pendientes del cliente para que la
+    /// vista previa esté disponible aunque el cliente vuelva al chat en otra
+    /// conversación.
+    /// </summary>
+    private async Task CargarPropuestasAsync()
+    {
+        if (!Sesion.Iniciada)
+        {
+            return;
+        }
+
+        try
+        {
+            var propuestas = await ChatApi.GetPropuestasAsync();
+
+            if (propuestas.Count == 0)
+            {
+                return;
+            }
+
+            // Se evita duplicar la tarjeta si ya está en la conversación.
+            var yaMostradas = mensajes
+                .SelectMany(m => m.Acciones)
+                .Where(a => a.IdPropuesta is not null)
+                .Select(a => a.IdPropuesta!.Value)
+                .ToHashSet();
+
+            var nuevas = propuestas
+                .Where(p => p.Estado == "Pendiente" && !yaMostradas.Contains(p.Id))
+                .Select(p => new AccionPropuestaDto
+                {
+                    Tipo = AccionTipos.SolicitudAtencion,
+                    Titulo = p.Tipo switch
+                    {
+                        SolicitudTipos.ConsultaPedido => "Consultar por un pedido",
+                        SolicitudTipos.SolicitudReposicion => "Pedir reposición",
+                        _ => "Dejar un mensaje a la tienda",
+                    },
+                    Detalle = p.Mensaje,
+                    IdPedido = p.IdPedido,
+                    IdProducto = p.IdProducto,
+                    IdVariante = p.IdVariante,
+                    IdPropuesta = p.Id,
+                    TelefonoEnmascarado = p.TelefonoEnmascarado,
+                    RequiereConfirmarTelefono = p.TelefonoEstado != TelefonoEstados.Confirmado,
+                })
+                .ToList();
+
+            if (nuevas.Count == 0)
+            {
+                return;
+            }
+
+            mensajes.Add(new MensajeChat
+            {
+                Rol = ChatRoles.Asistente,
+                Texto = "Tenés una solicitud lista para enviar. Revisala y confirmá si querés que la tienda la reciba.",
+                Acciones = nuevas,
+            });
+
+            StateHasChanged();
+            await DesplazarAlFinalAsync();
+        }
+        catch (HttpRequestException)
+        {
+            // Si no se pueden cargar las propuestas, el chat sigue usable.
+        }
+    }
+
+    private void Cerrar()
+    {
+        if (!abierto)
+        {
+            return;
+        }
+
+        abierto = false;
+        StateHasChanged();
+    }
+
+    private async Task EnfocarEntradaAsync()
+    {
+        try
+        {
+            await Js.InvokeVoidAsync("velvetChat.focusInput");
+        }
+        catch (JSException)
+        {
+            // Sin JS (prerender): el foco no es crítico.
+        }
+        catch (InvalidOperationException)
+        {
+        }
+    }
+
+    private async Task DesplazarAlFinalAsync()
+    {
+        try
+        {
+            await Js.InvokeVoidAsync("velvetChat.scrollToBottom", cuerpoChat);
+        }
+        catch (JSException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+    }
+
+    /// <summary>Envía un texto al asistente (sugerencia o mensaje escrito).</summary>
+    private async Task Enviar(string mensaje)
+    {
+        if (cargando || string.IsNullOrWhiteSpace(mensaje))
+        {
+            return;
+        }
+
+        var limpio = mensaje.Trim();
+
+        mensajes.Add(new MensajeChat { Rol = ChatRoles.Usuario, Texto = limpio });
+        texto = string.Empty;
+        sugerencias.Clear();
+        cargando = true;
+        StateHasChanged();
+
+        await DesplazarAlFinalAsync();
+
+        try
+        {
+            var historial = mensajes
+                .TakeLast(10)
+                .Select(m => new ChatMensajeDto { Rol = m.Rol, Texto = m.Texto })
+                .ToList();
+
+            // El historial enviado excluye el último mensaje (ya va aparte).
+            var historialSinUltimo = historial.Take(historial.Count - 1).ToList();
+
+            var respuesta = await ChatApi.EnviarAsync(new ChatSolicitudDto
+            {
+                Mensaje = limpio,
+                Historial = historialSinUltimo,
+                IdProductoContexto = IdProductoContexto ?? Contexto.IdProducto,
+                IdPedidoContexto = Contexto.IdPedido,
+            });
+
+            if (respuesta is null)
+            {
+                var detalle = ChatApi.UltimoError ?? "No pudimos conectar con el asistente.";
+                mensajes.Add(new MensajeChat
+                {
+                    Rol = ChatRoles.Asistente,
+                    Texto = detalle,
+                    Error = true,
+                });
+            }
+            else
+            {
+                mensajes.Add(new MensajeChat
+                {
+                    Rol = ChatRoles.Asistente,
+                    Texto = respuesta.Mensaje,
+                    RequiereAutenticacion = respuesta.RequiereAutenticacion,
+                    OpcionesPedido = [.. respuesta.OpcionesPedido],
+                    Acciones = [.. respuesta.Acciones],
+                });
+
+                sugerencias.Clear();
+                sugerencias.AddRange(respuesta.Sugerencias);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            mensajes.Add(new MensajeChat
+            {
+                Rol = ChatRoles.Asistente,
+                Texto = "La consulta tardó demasiado. Probá de nuevo en un momento.",
+                Error = true,
+            });
+        }
+        catch (HttpRequestException)
+        {
+            mensajes.Add(new MensajeChat
+            {
+                Rol = ChatRoles.Asistente,
+                Texto = "No pudimos conectar con el asistente. Revisá tu conexión y probá de nuevo.",
+                Error = true,
+            });
+        }
+        finally
+        {
+            cargando = false;
+            RecortarHistorial();
+            StateHasChanged();
+            await DesplazarAlFinalAsync();
+        }
+    }
+
+    private async Task EnviarAsync()
+    {
+        var mensaje = texto;
+        texto = string.Empty;
+        await Enviar(mensaje);
+    }
+
+    /// <summary>El cliente elige uno de los pedidos ofrecidos.</summary>
+    private async Task ElegirPedido(int idPedido)
+    {
+        Contexto.IdPedido = idPedido;
+        await Enviar($"Quiero el seguimiento del pedido #{idPedido}");
+    }
+
+    private void ConfirmarAccion(AccionPropuestaDto accion)
+    {
+        accion.Estado = "confirmada";
+        StateHasChanged();
+    }
+
+    private void CancelarAccion(AccionPropuestaDto accion)
+    {
+        accion.Estado = "cancelada";
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// CONFIRMA la propuesta: llama al endpoint protegido de escritura.
+    /// El backend revalida propiedad del pedido, producto, contenido y
+    /// destinatarios, y es idempotente (doble clic o reintento no duplican).
+    /// </summary>
+    private async Task ConfirmarSolicitudAsync(AccionPropuestaDto accion)
+    {
+        if (accion.IdPropuesta is not { } idPropuesta || enviandoSolicitud)
+        {
+            return;
+        }
+
+        enviandoSolicitud = true;
+        StateHasChanged();
+
+        try
+        {
+            var clave = $"{idPropuesta}-{DateTime.UtcNow.Ticks}";
+            var solicitud = await ChatApi.ConfirmarPropuestaAsync(
+                idPropuesta,
+                new ConfirmarPropuestaRequest
+                {
+                    GuardarTelefonoEnPerfil = false,
+                    ClaveIdempotencia = clave,
+                });
+
+            if (solicitud is null)
+            {
+                accion.Estado = "cancelada";
+                avisoAccion = ChatApi.UltimoError ?? "No pudimos enviar la solicitud. Probá de nuevo.";
+            }
+            else
+            {
+                accion.Estado = "confirmada";
+                avisoAccion = $"¡Listo! Enviamos tu solicitud a la tienda (nº {solicitud.Id}).";
+            }
+        }
+        catch (HttpRequestException)
+        {
+            accion.Estado = "cancelada";
+            avisoAccion = "No pudimos conectar con la tienda. Revisá tu conexión y probá de nuevo.";
+        }
+        finally
+        {
+            enviandoSolicitud = false;
+            StateHasChanged();
+            await DesplazarAlFinalAsync();
+        }
+    }
+
+    /// <summary>Cancela la propuesta: no se envía nada.</summary>
+    private async Task CancelarSolicitudAsync(AccionPropuestaDto accion)
+    {
+        if (accion.IdPropuesta is not { } idPropuesta)
+        {
+            accion.Estado = "cancelada";
+            StateHasChanged();
+            return;
+        }
+
+        var propuesta = await ChatApi.CancelarPropuestaAsync(idPropuesta);
+        accion.Estado = propuesta is null ? accion.Estado : "cancelada";
+        avisoAccion = propuesta is null
+            ? ChatApi.UltimoError
+            : "Cancelamos la solicitud: no se envió nada.";
+        StateHasChanged();
+    }
+
+    /// <summary>Abre el formulario para confirmar otro teléfono de contacto.</summary>
+    private void MostrarTelefonoAsync(AccionPropuestaDto accion)
+    {
+        if (accion.IdPropuesta is not { } idPropuesta)
+        {
+            return;
+        }
+
+        editandoTelefono = idPropuesta;
+        telefonoNuevo = string.Empty;
+        guardarTelefonoEnPerfil = false;
+        avisoAccion = null;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Guarda el teléfono confirmado en la propuesta. Si el cliente lo pidió,
+    /// también se actualiza su perfil (consentimiento expreso).
+    /// </summary>
+    private async Task GuardarTelefonoAsync(AccionPropuestaDto accion)
+    {
+        if (accion.IdPropuesta is not { } idPropuesta || string.IsNullOrWhiteSpace(telefonoNuevo))
+        {
+            return;
+        }
+
+        var propuesta = await ChatApi.ConfirmarTelefonoAsync(
+            idPropuesta, telefonoNuevo, guardarTelefonoEnPerfil);
+
+        if (propuesta is null)
+        {
+            avisoAccion = ChatApi.UltimoError ?? "No pudimos guardar el teléfono.";
+        }
+        else
+        {
+            accion.TelefonoEnmascarado = propuesta.TelefonoEnmascarado;
+            accion.RequiereConfirmarTelefono = propuesta.TelefonoEstado != TelefonoEstados.Confirmado;
+            editandoTelefono = null;
+            avisoAccion = "Listo, actualizamos el teléfono de contacto.";
+        }
+
+        StateHasChanged();
+    }
+
+    private void RecortarHistorial()
+    {
+        while (mensajes.Count > MaxMensajes)
+        {
+            mensajes.RemoveAt(0);
+        }
+    }
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+}

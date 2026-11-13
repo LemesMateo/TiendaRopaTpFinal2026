@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
+using TiendaRopa.Api.Asistente;
 using TiendaRopa.Api.Auth;
 using TiendaRopa.Api.Data;
 using TiendaRopa.Api.Entities;
@@ -67,6 +68,20 @@ public static class ApiIntegration
         services.AddScoped<AuthService>();
         services.AddScoped<PedidoService>();
         services.AddScoped<AdminService>();
+        services.AddScoped<SolicitudService>();
+        services.AddScoped<NotificacionService>();
+
+        // ---- Asistente conversacional (Gemini + Function Calling) ----
+        // La API key se resuelve desde la sección "Asistente" y, si no está,
+        // desde los secretos de usuario de TiendaRopa.Api. NUNCA viaja al
+        // frontend (ni a MAUI, ni a la Web, ni a Shared).
+        var opcionesAsistente = ResolverOpcionesAsistente(configuration, environment);
+
+        services.AddSingleton(opcionesAsistente);
+        services.AddScoped<AsistenteGemini>();
+        services.AddScoped<IGeneradorChat>(sp => sp.GetRequiredService<AsistenteGemini>());
+        services.AddScoped<HerramientasAsistente>();
+        services.AddScoped<AsistenteServicio>();
 
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -90,9 +105,24 @@ public static class ApiIntegration
             options.AddPolicy(
                 Roles.SoloAdministrador,
                 policy => policy.Requirements.Add(new AdministradorRequirement()));
+
+            // Personal de tienda: Administrador o Vendedor.
+            options.AddPolicy(
+                Roles.PersonalTienda,
+                policy => policy.Requirements.Add(new PersonalTiendaRequirement()));
+
+            // Una política por permiso (pedidos.ver, solicitudes.responder, …).
+            foreach (var (nombre, permiso) in Politicas.PorPermiso)
+            {
+                options.AddPolicy(
+                    nombre,
+                    policy => policy.Requirements.Add(new PermisoRequirement { Permiso = permiso }));
+            }
         });
 
         services.AddSingleton<IAuthorizationHandler, AdministradorHandler>();
+        services.AddSingleton<IAuthorizationHandler, PersonalTiendaHandler>();
+        services.AddSingleton<IAuthorizationHandler, PermisoHandler>();
 
         return services;
     }
@@ -135,5 +165,50 @@ public static class ApiIntegration
         app.MapControllers();
 
         return app;
+    }
+
+    /// <summary>
+    /// Resuelve la configuración del asistente.
+    ///
+    /// La API key puede venir de:
+    ///  1. "Asistente:Gemini:ApiKey" en la configuración del host (en
+    ///     producción: variable de entorno Asistente__Gemini__ApiKey).
+    ///  2. Los secretos de usuario de TiendaRopa.Api (dotnet user-secrets),
+    ///     que es el mecanismo recomendado en desarrollo.
+    ///
+    /// En ambos casos la clave queda en el servidor: nunca se envía al
+    /// cliente (MAUI, Web ni Shared).
+    /// </summary>
+    private static AsistenteOpciones ResolverOpcionesAsistente(
+        IConfiguration configuration, IHostEnvironment environment)
+    {
+        var opciones = configuration
+            .GetSection(AsistenteOpciones.Seccion)
+            .Get<AsistenteOpciones>() ?? new AsistenteOpciones();
+
+        if (string.IsNullOrWhiteSpace(opciones.Gemini.ApiKey))
+        {
+            // Secretos de usuario: se leen del perfil de Windows, fuera del repo.
+            var secretos = new ConfigurationBuilder()
+                .AddUserSecrets(typeof(ApiIntegration).Assembly, optional: true)
+                .AddEnvironmentVariables()
+                .Build();
+
+            var clave = secretos[AsistenteOpciones.ClaveApiKey];
+            if (!string.IsNullOrWhiteSpace(clave))
+            {
+                opciones.Gemini.ApiKey = clave;
+            }
+        }
+
+        if (!opciones.Habilitado)
+        {
+            // Aviso visible en el log: el chat responderá con un error claro.
+            Console.WriteLine(
+                "[VelvetRose] Asistente sin API key. Configurala con: " +
+                "dotnet user-secrets set \"Asistente:Gemini:ApiKey\" \"<clave>\" --project TiendaRopa.Api");
+        }
+
+        return opciones;
     }
 }

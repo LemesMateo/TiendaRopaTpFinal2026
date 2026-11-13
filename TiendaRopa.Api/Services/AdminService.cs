@@ -526,6 +526,64 @@ public sealed class AdminService(VelvetRoseDbContext db, PedidoService pedidos, 
         return (await pedidos.MapearAsync(idPedido, ct), null, 200);
     }
 
+    // ---------------- Notas públicas del pedido ----------------
+
+    /// <summary>
+    /// Crea una nota de estado pública para un pedido. La ve el cliente en
+    /// "Mis pedidos" y el chatbot la usa para responder consultas de envío.
+    /// </summary>
+    public async Task<(PedidoNotaDto? Valor, string? Error, int Status)> CrearNotaPedidoAsync(
+        int idPedido, CrearNotaPedidoRequest request, CancellationToken ct)
+    {
+        var pedidoExiste = await db.Pedidos
+            .AnyAsync(p => p.IdPedido == idPedido, ct);
+
+        if (!pedidoExiste)
+        {
+            return (null, "Pedido no encontrado.", 404);
+        }
+
+        var nota = new PedidoNota
+        {
+            IdPedido = idPedido,
+            FechaActualizacion = DateTime.UtcNow,
+            Nota = request.Nota.Trim(),
+            Empresa = string.IsNullOrWhiteSpace(request.Empresa) ? null : request.Empresa.Trim(),
+            CodigoSeguimiento = string.IsNullOrWhiteSpace(request.CodigoSeguimiento)
+                ? null
+                : request.CodigoSeguimiento.Trim(),
+        };
+
+        db.PedidoNotas.Add(nota);
+        await db.SaveChangesAsync(ct);
+
+        return (new PedidoNotaDto
+        {
+            Id = nota.IdPedidoNota,
+            FechaActualizacion = nota.FechaActualizacion,
+            Nota = nota.Nota,
+            Empresa = nota.Empresa,
+            CodigoSeguimiento = nota.CodigoSeguimiento,
+        }, null, 201);
+    }
+
+    /// <summary>Notas públicas de un pedido (historial, más reciente primero).</summary>
+    public async Task<List<PedidoNotaDto>> GetNotasPedidoAsync(int idPedido, CancellationToken ct)
+    {
+        return await db.PedidoNotas.AsNoTracking()
+            .Where(n => n.IdPedido == idPedido)
+            .OrderByDescending(n => n.FechaActualizacion)
+            .Select(n => new PedidoNotaDto
+            {
+                Id = n.IdPedidoNota,
+                FechaActualizacion = n.FechaActualizacion,
+                Nota = n.Nota,
+                Empresa = n.Empresa,
+                CodigoSeguimiento = n.CodigoSeguimiento,
+            })
+            .ToListAsync(ct);
+    }
+
     // ---------------- Imágenes ----------------
 
     /// <summary>Carpeta donde la API guarda las imágenes de producto.</summary>
@@ -728,6 +786,266 @@ public sealed class AdminService(VelvetRoseDbContext db, PedidoService pedidos, 
         LimpiarArchivosHuerfanos(productoId, imagenes.Select(i => i.UrlImagen));
 
         return (true, null, 200);
+    }
+
+    /// <summary>
+    /// Reemplaza la lista COMPLETA de imágenes vigentes del producto en una
+    /// sola operación atómica: bajas, altas de archivos nuevos y orden final.
+    ///
+    /// El límite de <see cref="ProductoImagenes.MaximoPorProducto"/> se evalúa
+    /// sobre la lista FINAL: una imagen que se elimina en la misma operación
+    /// libera su lugar, así que "5 → quitar 2 → agregar 2" es válido aunque
+    /// las dos filas eliminadas todavía existan en la base al comenzar.
+    ///
+    /// Si algo falla no se persiste nada (transacción) y los archivos nuevos ya
+    /// escritos se borran, de modo que un error no deja imágenes huérfanas ni
+    /// pierde las que estaban.
+    /// </summary>
+    public async Task<(List<ProductoImagenDto>? Valor, string? Error, int Status)> ReemplazarImagenesAsync(
+        int productoId,
+        IReadOnlyList<ImagenFinalDto> imagenes,
+        IReadOnlyList<ImagenNuevaDto> nuevas,
+        CancellationToken cancellationToken)
+    {
+        imagenes ??= [];
+        nuevas ??= [];
+
+        // ---- Validaciones de forma, antes de tocar disco o base ----
+        if (imagenes.Count > ProductoImagenes.MaximoPorProducto)
+        {
+            return (null,
+                $"Un producto admite hasta {ProductoImagenes.MaximoPorProducto} imágenes " +
+                $"y la lista final tiene {imagenes.Count}.",
+                400);
+        }
+
+        var idsEnviados = new HashSet<int>();
+        var indicesUsados = new HashSet<int>();
+
+        foreach (var imagen in imagenes)
+        {
+            if (imagen.Id > 0)
+            {
+                if (!idsEnviados.Add(imagen.Id))
+                {
+                    return (null, "La lista de imágenes repite una misma imagen.", 400);
+                }
+
+                continue;
+            }
+
+            var indice = imagen.IndiceNueva ?? -1;
+            if (indice < 0 || indice >= nuevas.Count)
+            {
+                return (null, "La lista de imágenes hace referencia a un archivo que no se envió.", 400);
+            }
+
+            if (!indicesUsados.Add(indice))
+            {
+                return (null, "La lista de imágenes usa el mismo archivo nuevo dos veces.", 400);
+            }
+        }
+
+        if (indicesUsados.Count != nuevas.Count)
+        {
+            return (null, "Se enviaron archivos que no forman parte de la lista de imágenes.", 400);
+        }
+
+        for (var i = 0; i < nuevas.Count; i++)
+        {
+            var nueva = nuevas[i];
+            if (nueva.Contenido is null || nueva.Contenido.LongLength == 0)
+            {
+                return (null, $"El archivo \"{nueva.NombreArchivo}\" está vacío.", 400);
+            }
+
+            if (nueva.Contenido.LongLength > ProductoImagenes.MaximoBytes)
+            {
+                return (null,
+                    $"\"{nueva.NombreArchivo}\" supera el máximo de " +
+                    $"{ProductoImagenes.MaximoBytes / (1024 * 1024)} MB.",
+                    400);
+            }
+
+            if (!ProductoImagenes.EsTipoPermitido(nueva.ContentType))
+            {
+                return (null, "Sólo se aceptan imágenes JPEG o PNG.", 400);
+            }
+
+            if (!ProductoImagenes.TieneFirmaValida(nueva.Contenido))
+            {
+                return (null, $"\"{nueva.NombreArchivo}\" no es una imagen JPEG o PNG válida.", 400);
+            }
+        }
+
+        // ---- Estado vigente en la base ----
+        var producto = await db.Productos
+            .Include(p => p.Imagenes)
+            .FirstOrDefaultAsync(p => p.IdProducto == productoId, cancellationToken);
+
+        if (producto is null)
+        {
+            return (null, "Producto no encontrado.", 404);
+        }
+
+        var idsVigentes = producto.Imagenes.Select(i => i.IdProductoImagen).ToHashSet();
+        if (idsEnviados.Any(id => !idsVigentes.Contains(id)))
+        {
+            return (null,
+                "Alguna de las imágenes ya no pertenece al producto. " +
+                "Volvé a abrir el producto para actualizar la lista.",
+                409);
+        }
+
+        // ---- Archivos nuevos a disco (se borran si algo falla) ----
+        var carpeta = CarpetaImagenes;
+        var escritas = new List<string>();
+        var urlsNuevas = new Dictionary<ImagenFinalDto, string>(ReferenceEqualityComparer.Instance);
+
+        try
+        {
+            Directory.CreateDirectory(carpeta);
+
+            foreach (var imagen in imagenes.Where(i => i.Id == 0))
+            {
+                var origen = nuevas[imagen.IndiceNueva!.Value];
+                var extension = ProductoImagenes.ExtensionPorTipo(origen.ContentType)!;
+                var nombreArchivo = $"p{productoId}-{Guid.NewGuid():N}.{extension}";
+                var ruta = Path.Combine(carpeta, nombreArchivo);
+
+                await using (var destino = new FileStream(
+                    ruta, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                {
+                    await destino.WriteAsync(origen.Contenido, cancellationToken);
+                }
+
+                escritas.Add(ruta);
+                urlsNuevas[imagen] = $"{ProductoImagenes.PrefijoRuta}{nombreArchivo}";
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            foreach (var ruta in escritas)
+            {
+                TryEliminarArchivo(ruta);
+            }
+
+            return (null, "No se pudieron guardar las imágenes en el servidor.", 500);
+        }
+
+        // ---- Persistencia atómica ----
+        var estrategia = db.Database.CreateExecutionStrategy();
+
+        try
+        {
+            return await estrategia.ExecuteAsync<(List<ProductoImagenDto>? Valor, string? Error, int Status)>(
+                async () =>
+            {
+                await using var transaccion = await db.Database.BeginTransactionAsync(cancellationToken);
+
+                // El índice único filtrado ([Principal] = 1) sólo admite una
+                // principal por producto: se limpian todas antes de asignarla.
+                foreach (var fila in producto.Imagenes)
+                {
+                    fila.Principal = false;
+                }
+
+                foreach (var fila in producto.Imagenes
+                    .Where(f => !idsEnviados.Contains(f.IdProductoImagen))
+                    .ToList())
+                {
+                    db.ProductoImagenes.Remove(fila);
+                    producto.Imagenes.Remove(fila);
+                }
+
+                var vigentesPorId = producto.Imagenes.ToDictionary(f => f.IdProductoImagen);
+                var orden = 1;
+                ProductoImagen? principal = null;
+
+                foreach (var imagen in imagenes)
+                {
+                    ProductoImagen fila;
+
+                    if (imagen.Id > 0)
+                    {
+                        fila = vigentesPorId[imagen.Id];
+                        fila.Orden = orden++;
+                    }
+                    else
+                    {
+                        fila = new ProductoImagen
+                        {
+                            IdProducto = productoId,
+                            UrlImagen = urlsNuevas[imagen],
+                            Orden = orden++,
+                            Principal = false,
+                        };
+
+                        db.ProductoImagenes.Add(fila);
+                        producto.Imagenes.Add(fila);
+                    }
+
+                    if (imagen.Principal)
+                    {
+                        principal = fila;
+                    }
+                }
+
+                // Primero bajas, altas y orden (todas las filas sin principal).
+                await db.SaveChangesAsync(cancellationToken);
+
+                // Después, una única principal: la elegida o, si no se indicó
+                // ninguna, la primera de la lista (nunca se queda sin principal).
+                principal ??= imagenes.Count > 0
+                    ? producto.Imagenes.OrderBy(f => f.Orden).First()
+                    : null;
+
+                if (principal is not null)
+                {
+                    principal.Principal = true;
+                    await db.SaveChangesAsync(cancellationToken);
+                }
+
+                await transaccion.CommitAsync(cancellationToken);
+
+                LimpiarArchivosHuerfanos(
+                    productoId, imagenes.Select(i => i.Id > 0
+                        ? vigentesPorId[i.Id].UrlImagen
+                        : urlsNuevas[i]));
+
+                var persistidas = await db.ProductoImagenes.AsNoTracking()
+                    .Where(i => i.IdProducto == productoId)
+                    .OrderBy(i => i.Orden)
+                    .Select(i => new ProductoImagenDto
+                    {
+                        Id = i.IdProductoImagen,
+                        UrlImagen = i.UrlImagen,
+                        Orden = i.Orden,
+                        Principal = i.Principal,
+                    })
+                    .ToListAsync(cancellationToken);
+
+                return (persistidas, null, 200);
+            });
+        }
+        catch (DbUpdateException)
+        {
+            foreach (var ruta in escritas)
+            {
+                TryEliminarArchivo(ruta);
+            }
+
+            return (null, "No se pudo guardar la lista de imágenes.", 409);
+        }
+        catch
+        {
+            foreach (var ruta in escritas)
+            {
+                TryEliminarArchivo(ruta);
+            }
+
+            throw;
+        }
     }
 
     /// <summary>Borra del disco las imágenes subidas que ya no se referencian.</summary>

@@ -4,6 +4,7 @@ using Microsoft.Maui.DevFlow.Agent;
 using Microsoft.Maui.DevFlow.Blazor;
 #endif
 using TiendaRopa.Contracts.Admin;
+using TiendaRopa.Contracts.Asistente;
 using TiendaRopa.Contracts.Catalogo;
 using TiendaRopa.Contracts.Identidad;
 using TiendaRopa.Contracts.Pedidos;
@@ -53,6 +54,18 @@ namespace TiendaRopa
             builder.Services.AddScoped<IPreferenciasLocal, PreferenciasLocal>();
             builder.Services.AddScoped<SesionService>();
             builder.Services.AddScoped<CarritoService>();
+
+            // Asistente conversacional (Gemini). La API key vive sólo en el
+            // backend: la app llama a /api/asistente/mensaje y nunca la ve.
+            builder.Services.AddScoped<ChatContexto>();
+            builder.Services.AddScoped<IChatService>(sp =>
+                new HttpChatService(sp.GetRequiredService<HttpClient>(), sp.GetRequiredService<SesionService>()));
+
+            // Solicitudes de atención y notificaciones internas de la tienda.
+            builder.Services.AddScoped<ISolicitudService>(sp =>
+                new HttpSolicitudService(sp.GetRequiredService<HttpClient>(), sp.GetRequiredService<SesionService>()));
+            builder.Services.AddScoped<INotificacionService>(sp =>
+                new HttpNotificacionService(sp.GetRequiredService<HttpClient>(), sp.GetRequiredService<SesionService>()));
 
             builder.Services.AddScoped<IAuthService>(sp =>
                 new HttpAuthService(sp.GetRequiredService<HttpClient>(), sp.GetRequiredService<SesionService>()));

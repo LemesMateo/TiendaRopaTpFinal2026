@@ -140,6 +140,48 @@ namespace TiendaRopa.Api.Data.Migrations
                     b.ToTable("EstadoPedido", (string)null);
                 });
 
+            modelBuilder.Entity("TiendaRopa.Api.Entities.Notificacion", b =>
+                {
+                    b.Property<int>("IdNotificacion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdNotificacion"));
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FechaLectura")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IdSolicitud")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Leida")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Mensaje")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.HasKey("IdNotificacion");
+
+                    b.HasIndex("IdSolicitud");
+
+                    b.HasIndex("IdUsuario", "Leida");
+
+                    b.ToTable("Notificacion", (string)null);
+                });
+
             modelBuilder.Entity("TiendaRopa.Api.Entities.Pedido", b =>
                 {
                     b.Property<int>("IdPedido")
@@ -209,6 +251,42 @@ namespace TiendaRopa.Api.Data.Migrations
                         {
                             t.HasCheckConstraint("CK_PedidoDetalle_Cantidad_Positiva", "[Cantidad] > 0");
                         });
+                });
+
+            modelBuilder.Entity("TiendaRopa.Api.Entities.PedidoNota", b =>
+                {
+                    b.Property<int>("IdPedidoNota")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdPedidoNota"));
+
+                    b.Property<string>("CodigoSeguimiento")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("Empresa")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("FechaActualizacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IdPedido")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Nota")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("IdPedidoNota");
+
+                    b.HasIndex("IdPedido");
+
+                    b.HasIndex("IdPedido", "FechaActualizacion");
+
+                    b.ToTable("PedidoNota", (string)null);
                 });
 
             modelBuilder.Entity("TiendaRopa.Api.Entities.Producto", b =>
@@ -345,6 +423,177 @@ namespace TiendaRopa.Api.Data.Migrations
                     b.ToTable("Rol", (string)null);
                 });
 
+            modelBuilder.Entity("TiendaRopa.Api.Entities.SolicitudAtencion", b =>
+                {
+                    b.Property<int>("IdSolicitud")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdSolicitud"));
+
+                    b.Property<string>("ClaveIdempotencia")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ColorDescripcion")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("FechaActualizacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FechaResolucion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IdCliente")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdPedido")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdProducto")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdProductoVariante")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdPropuesta")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdUsuarioResuelve")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Mensaje")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Respuesta")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TalleDescripcion")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("TelefonoContacto")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TelefonoEstado")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.HasKey("IdSolicitud");
+
+                    b.HasIndex("ClaveIdempotencia")
+                        .IsUnique()
+                        .HasFilter("[ClaveIdempotencia] IS NOT NULL");
+
+                    b.HasIndex("Estado");
+
+                    b.HasIndex("IdCliente");
+
+                    b.HasIndex("IdPedido");
+
+                    b.HasIndex("IdProducto");
+
+                    b.HasIndex("IdPropuesta")
+                        .IsUnique()
+                        .HasFilter("[IdPropuesta] IS NOT NULL");
+
+                    b.ToTable("SolicitudAtencion", (string)null);
+                });
+
+            modelBuilder.Entity("TiendaRopa.Api.Entities.SolicitudPropuesta", b =>
+                {
+                    b.Property<int>("IdPropuesta")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdPropuesta"));
+
+                    b.Property<string>("ColorDescripcion")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("FechaConfirmacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("GuardarTelefonoEnPerfil")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("IdCliente")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdPedido")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdProducto")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdProductoVariante")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdSolicitudGenerada")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Mensaje")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("TalleDescripcion")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("TelefonoContacto")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TelefonoEstado")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.HasKey("IdPropuesta");
+
+                    b.HasIndex("IdUsuario", "Estado");
+
+                    b.ToTable("SolicitudPropuesta", (string)null);
+                });
+
             modelBuilder.Entity("TiendaRopa.Api.Entities.Talle", b =>
                 {
                     b.Property<int>("IdTalle")
@@ -421,6 +670,17 @@ namespace TiendaRopa.Api.Data.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("TiendaRopa.Api.Entities.Notificacion", b =>
+                {
+                    b.HasOne("TiendaRopa.Api.Entities.SolicitudAtencion", "Solicitud")
+                        .WithMany("Notificaciones")
+                        .HasForeignKey("IdSolicitud")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Solicitud");
+                });
+
             modelBuilder.Entity("TiendaRopa.Api.Entities.Pedido", b =>
                 {
                     b.HasOne("TiendaRopa.Api.Entities.Cliente", "Cliente")
@@ -457,6 +717,17 @@ namespace TiendaRopa.Api.Data.Migrations
                     b.Navigation("Pedido");
 
                     b.Navigation("ProductoVariante");
+                });
+
+            modelBuilder.Entity("TiendaRopa.Api.Entities.PedidoNota", b =>
+                {
+                    b.HasOne("TiendaRopa.Api.Entities.Pedido", "Pedido")
+                        .WithMany("Notas")
+                        .HasForeignKey("IdPedido")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Pedido");
                 });
 
             modelBuilder.Entity("TiendaRopa.Api.Entities.Producto", b =>
@@ -508,6 +779,31 @@ namespace TiendaRopa.Api.Data.Migrations
                     b.Navigation("Talle");
                 });
 
+            modelBuilder.Entity("TiendaRopa.Api.Entities.SolicitudAtencion", b =>
+                {
+                    b.HasOne("TiendaRopa.Api.Entities.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("IdCliente")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TiendaRopa.Api.Entities.Pedido", "Pedido")
+                        .WithMany()
+                        .HasForeignKey("IdPedido")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TiendaRopa.Api.Entities.Producto", "Producto")
+                        .WithMany()
+                        .HasForeignKey("IdProducto")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("Pedido");
+
+                    b.Navigation("Producto");
+                });
+
             modelBuilder.Entity("TiendaRopa.Api.Entities.Usuario", b =>
                 {
                     b.HasOne("TiendaRopa.Api.Entities.Rol", "Rol")
@@ -542,6 +838,8 @@ namespace TiendaRopa.Api.Data.Migrations
             modelBuilder.Entity("TiendaRopa.Api.Entities.Pedido", b =>
                 {
                     b.Navigation("Detalles");
+
+                    b.Navigation("Notas");
                 });
 
             modelBuilder.Entity("TiendaRopa.Api.Entities.Producto", b =>
@@ -559,6 +857,11 @@ namespace TiendaRopa.Api.Data.Migrations
             modelBuilder.Entity("TiendaRopa.Api.Entities.Rol", b =>
                 {
                     b.Navigation("Usuarios");
+                });
+
+            modelBuilder.Entity("TiendaRopa.Api.Entities.SolicitudAtencion", b =>
+                {
+                    b.Navigation("Notificaciones");
                 });
 
             modelBuilder.Entity("TiendaRopa.Api.Entities.Talle", b =>

@@ -51,6 +51,13 @@ public interface IAdminService
     /// <summary>Aplica las transiciones válidas; devuelve null si la transición no está permitida.</summary>
     Task<PedidoDto?> CambiarEstadoPedidoAsync(int id, CambiarEstadoPedidoRequest request, CancellationToken cancellationToken = default);
 
+    // ---- Notas públicas del pedido ----
+    /// <summary>Historial de actualizaciones públicas del pedido (más reciente primero).</summary>
+    Task<IReadOnlyList<PedidoNotaDto>> GetNotasPedidoAsync(int idPedido, CancellationToken cancellationToken = default);
+
+    /// <summary>Crea una actualización pública; devuelve null si el backend la rechazó.</summary>
+    Task<PedidoNotaDto?> CrearNotaPedidoAsync(int idPedido, CrearNotaPedidoRequest request, CancellationToken cancellationToken = default);
+
     // ---- Imágenes ----
     /// <summary>
     /// Sube una imagen (JPEG/PNG, hasta 5 MB) al producto y devuelve la fila
@@ -65,4 +72,17 @@ public interface IAdminService
 
     /// <summary>Reemplaza el orden/principal de las imágenes de un producto.</summary>
     Task<bool> GuardarImagenesAsync(int productoId, IReadOnlyList<ProductoImagenDto> imagenes, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Reemplaza la lista COMPLETA de imágenes vigentes del producto en una sola
+    /// operación: aplica las bajas, las altas (archivos nuevos) y el orden final
+    /// de forma atómica. El límite se evalúa sobre la lista final, así que
+    /// eliminar una imagen libera su lugar para esa misma operación.
+    /// Devuelve la lista persistida, o null si el backend rechazó la operación.
+    /// </summary>
+    Task<IReadOnlyList<ProductoImagenDto>?> ReemplazarImagenesAsync(
+        int productoId,
+        IReadOnlyList<ImagenFinalDto> imagenes,
+        IReadOnlyList<ImagenNuevaDto> nuevas,
+        CancellationToken cancellationToken = default);
 }

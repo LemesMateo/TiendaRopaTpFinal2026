@@ -142,6 +142,35 @@
     margin-left: var(--vr-space-1);
 }
 
+/* ---- Actualizaciones públicas del pedido ---- */
+.mp-notas {
+    list-style: none;
+    margin: var(--vr-space-3) 0 0;
+    padding: 0;
+    display: grid;
+    gap: var(--vr-space-2);
+}
+
+.mp-notas__item {
+    padding: var(--vr-space-3);
+    border: 1px solid var(--vr-lavender);
+    border-radius: var(--vr-radius-md);
+    background-color: var(--vr-lavender);
+}
+
+.mp-notas__texto {
+    margin: 0;
+    font-size: var(--vr-fs-sm);
+    line-height: var(--vr-lh-body);
+    color: var(--vr-lavender-text);
+}
+
+.mp-notas__meta {
+    margin: var(--vr-space-1) 0 0;
+    font-size: var(--vr-fs-xs);
+    color: var(--vr-plum-soft);
+}
+
 .mp-card__cancel {
     min-height: var(--vr-tap-min);
     padding: 0 var(--vr-space-4);

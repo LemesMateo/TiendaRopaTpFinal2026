@@ -20,6 +20,13 @@ public class VelvetRoseDbContext(DbContextOptions<VelvetRoseDbContext> options) 
     public DbSet<EstadoPedido> EstadosPedido => Set<EstadoPedido>();
     public DbSet<Pedido> Pedidos => Set<Pedido>();
     public DbSet<PedidoDetalle> PedidoDetalles => Set<PedidoDetalle>();
+    public DbSet<PedidoNota> PedidoNotas => Set<PedidoNota>();
+
+    public DbSet<SolicitudAtencion> SolicitudesAtencion => Set<SolicitudAtencion>();
+
+    public DbSet<SolicitudPropuesta> SolicitudPropuestas => Set<SolicitudPropuesta>();
+
+    public DbSet<Notificacion> Notificaciones => Set<Notificacion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -189,6 +196,89 @@ public class VelvetRoseDbContext(DbContextOptions<VelvetRoseDbContext> options) 
                 .WithMany(v => v.Detalles)
                 .HasForeignKey(x => x.IdProductoVariante)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PedidoNota>(e =>
+        {
+            e.ToTable("PedidoNota");
+            e.HasKey(x => x.IdPedidoNota);
+            e.Property(x => x.Nota).HasMaxLength(500).IsRequired();
+            e.Property(x => x.Empresa).HasMaxLength(100);
+            e.Property(x => x.CodigoSeguimiento).HasMaxLength(60);
+            e.HasIndex(x => x.IdPedido);
+            // Historial: se consultan por pedido y fecha descendente.
+            e.HasIndex(x => new { x.IdPedido, x.FechaActualizacion });
+            e.HasOne(x => x.Pedido)
+                .WithMany(p => p.Notas)
+                .HasForeignKey(x => x.IdPedido)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ---------- Solicitudes de atención y notificaciones ----------
+
+        modelBuilder.Entity<SolicitudAtencion>(e =>
+        {
+            e.ToTable("SolicitudAtencion");
+            e.HasKey(x => x.IdSolicitud);
+            e.Property(x => x.Tipo).HasMaxLength(40).IsRequired();
+            e.Property(x => x.Estado).HasMaxLength(30).IsRequired();
+            e.Property(x => x.Mensaje).HasMaxLength(1000).IsRequired();
+            e.Property(x => x.TelefonoContacto).HasMaxLength(50);
+            e.Property(x => x.TelefonoEstado).HasMaxLength(30);
+            e.Property(x => x.TalleDescripcion).HasMaxLength(30);
+            e.Property(x => x.ColorDescripcion).HasMaxLength(50);
+            e.Property(x => x.ClaveIdempotencia).HasMaxLength(100);
+            e.HasIndex(x => x.IdCliente);
+            e.HasIndex(x => x.Estado);
+            e.HasIndex(x => x.IdPedido);
+            // Idempotencia: una clave por propuesta / por reintento del cliente.
+            e.HasIndex(x => x.ClaveIdempotencia)
+                .IsUnique()
+                .HasFilter("[ClaveIdempotencia] IS NOT NULL");
+            // Una propuesta genera como máximo una solicitud.
+            e.HasIndex(x => x.IdPropuesta)
+                .IsUnique()
+                .HasFilter("[IdPropuesta] IS NOT NULL");
+            e.HasOne(x => x.Cliente)
+                .WithMany()
+                .HasForeignKey(x => x.IdCliente)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Pedido)
+                .WithMany()
+                .HasForeignKey(x => x.IdPedido)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Producto)
+                .WithMany()
+                .HasForeignKey(x => x.IdProducto)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<SolicitudPropuesta>(e =>
+        {
+            e.ToTable("SolicitudPropuesta");
+            e.HasKey(x => x.IdPropuesta);
+            e.Property(x => x.Tipo).HasMaxLength(40).IsRequired();
+            e.Property(x => x.Estado).HasMaxLength(30).IsRequired();
+            e.Property(x => x.Mensaje).HasMaxLength(1000).IsRequired();
+            e.Property(x => x.TelefonoContacto).HasMaxLength(50);
+            e.Property(x => x.TelefonoEstado).HasMaxLength(30).IsRequired();
+            e.Property(x => x.TalleDescripcion).HasMaxLength(30);
+            e.Property(x => x.ColorDescripcion).HasMaxLength(50);
+            e.HasIndex(x => new { x.IdUsuario, x.Estado });
+        });
+
+        modelBuilder.Entity<Notificacion>(e =>
+        {
+            e.ToTable("Notificacion");
+            e.HasKey(x => x.IdNotificacion);
+            e.Property(x => x.Tipo).HasMaxLength(40).IsRequired();
+            e.Property(x => x.Mensaje).HasMaxLength(300).IsRequired();
+            e.HasIndex(x => new { x.IdUsuario, x.Leida });
+            e.HasIndex(x => x.IdSolicitud);
+            e.HasOne(x => x.Solicitud)
+                .WithMany(s => s.Notificaciones)
+                .HasForeignKey(x => x.IdSolicitud)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

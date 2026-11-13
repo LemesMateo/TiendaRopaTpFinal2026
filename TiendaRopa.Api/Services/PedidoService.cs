@@ -353,6 +353,17 @@ public sealed class PedidoService(VelvetRoseDbContext db)
                         Subtotal = d.Subtotal,
                     })
                     .ToList(),
+                Notas = p.Notas
+                    .OrderByDescending(n => n.FechaActualizacion)
+                    .Select(n => new PedidoNotaDto
+                    {
+                        Id = n.IdPedidoNota,
+                        FechaActualizacion = n.FechaActualizacion,
+                        Nota = n.Nota,
+                        Empresa = n.Empresa,
+                        CodigoSeguimiento = n.CodigoSeguimiento,
+                    })
+                    .ToList(),
             })
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new InvalidOperationException($"No existe el pedido {idPedido}.");
@@ -366,6 +377,7 @@ public sealed class PedidoService(VelvetRoseDbContext db)
             Observacion = pedido.Observacion,
             PermiteCancelacion = EsCancelacionPermitida(pedido.Estado),
             Detalles = pedido.Detalles,
+            Notas = pedido.Notas,
         };
     }
 }

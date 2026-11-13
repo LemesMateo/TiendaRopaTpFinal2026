@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -190,64 +191,6 @@ public class AdminController(AdminService admin, ILogger<AdminController> log) :
         return Ok(valor);
     }
 
-    // ---------- Pedidos ----------
-
-    [HttpGet("pedidos")]
-    public async Task<ActionResult<PagedResult<PedidoAdminDto>>> GetPedidos(
-        [FromQuery] string? estado,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
-        CancellationToken cancellationToken = default)
-    {
-        if (page < 1 || pageSize < 1 || pageSize > MaxPageSize)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Parámetros inválidos",
-                Detail = $"page ≥ 1 y pageSize entre 1 y {MaxPageSize}.",
-                Status = 400,
-            });
-        }
-
-        var (items, total) = await admin.GetPedidosAsync(estado, page, pageSize, cancellationToken);
-        return Ok(new PagedResult<PedidoAdminDto>
-        {
-            Items = items,
-            Page = page,
-            PageSize = pageSize,
-            TotalItems = total,
-            TotalPages = (int)Math.Ceiling(total / (double)pageSize),
-        });
-    }
-
-    [HttpGet("pedidos/{id:int}")]
-    public async Task<ActionResult<PedidoDto>> GetPedido(int id, CancellationToken cancellationToken)
-    {
-        var resultado = await admin.GetPedidoAsync(id, cancellationToken);
-        return resultado is null
-            ? NotFound(new ProblemDetails { Title = "Pedido no encontrado", Status = 404 })
-            : Ok(resultado);
-    }
-
-    /// <summary>Cambio de estado aplicando las transiciones válidas.</summary>
-    [HttpPut("pedidos/{id:int}/estado")]
-    public async Task<ActionResult<PedidoDto>> CambiarEstado(
-        int id, CambiarEstadoPedidoRequest request, CancellationToken cancellationToken)
-    {
-        var (valor, error, status) = await admin.CambiarEstadoAsync(id, request.Estado, cancellationToken);
-        if (valor is null)
-        {
-            return StatusCode(status, new ProblemDetails
-            {
-                Title = "Transición no permitida",
-                Detail = error,
-                Status = status,
-            });
-        }
-
-        return Ok(valor);
-    }
-
     // ---------- Imágenes ----------
 
     /// <summary>
@@ -273,6 +216,119 @@ public class AdminController(AdminService admin, ILogger<AdminController> log) :
         }
 
         return CreatedAtAction(nameof(GetProducto), new { id }, valor);
+    }
+
+    /// <summary>
+    /// Reemplaza la lista COMPLETA de imágenes vigentes del producto en una sola
+    /// operación (bajas + altas + orden + principal).
+    ///
+    /// El cuerpo es multipart con dos partes:
+    ///  - <c>imagenes</c>: JSON con la lista final en orden. Cada elemento con
+    ///    <c>id</c> &gt; 0 es una imagen que se conserva; cada elemento con
+    ///    <c>id</c> = 0 referencia un archivo nuevo por <c>indiceNueva</c>.
+    ///  - <c>archivo{N}</c>: archivo del lote con ese índice.
+    ///
+    /// El límite de 5 se valida sobre la lista final (no sobre el estado previo),
+    /// de modo que eliminar y agregar imágenes en el mismo guardado es válido.
+    /// </summary>
+    [HttpPut("productos/{id:int}/imagenes/lote")]
+    [RequestSizeLimit((ProductoImagenes.MaximoBytes + 128 * 1024) * ProductoImagenes.MaximoPorProducto)]
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<IReadOnlyList<ProductoImagenDto>>> ReemplazarImagenes(
+        int id, CancellationToken cancellationToken)
+    {
+        if (!Request.HasFormContentType)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Solicitud inválida",
+                Detail = "Se esperaba multipart/form-data con la lista y los archivos.",
+                Status = 400,
+            });
+        }
+
+        var formulario = await Request.ReadFormAsync(cancellationToken);
+
+        List<ImagenFinalDto>? imagenes;
+        try
+        {
+            imagenes = JsonSerializer.Deserialize<List<ImagenFinalDto>>(
+                formulario["imagenes"].ToString(),
+                new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        }
+        catch (JsonException)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Solicitud inválida",
+                Detail = "La lista de imágenes no tiene el formato esperado.",
+                Status = 400,
+            });
+        }
+
+        if (imagenes is null)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Solicitud inválida",
+                Detail = "Falta la lista de imágenes (campo \"imagenes\").",
+                Status = 400,
+            });
+        }
+
+        // Los archivos se envían como archivo0, archivo1, … y se indexan por
+        // el número del campo, que es el que referencia la lista.
+        var archivos = new SortedDictionary<int, IFormFile>();
+        foreach (var archivo in formulario.Files)
+        {
+            var sufijo = archivo.Name.StartsWith("archivo", StringComparison.OrdinalIgnoreCase)
+                ? archivo.Name["archivo".Length..]
+                : string.Empty;
+
+            if (!int.TryParse(sufijo, out var indice) || indice < 0)
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Solicitud inválida",
+                    Detail = $"El archivo \"{archivo.Name}\" no indica su posición en el lote.",
+                    Status = 400,
+                });
+            }
+
+            archivos[indice] = archivo;
+        }
+
+        var nuevas = new List<ImagenNuevaDto>(archivos.Count);
+        using var buffer = new MemoryStream();
+
+        foreach (var (_, archivo) in archivos)
+        {
+            buffer.SetLength(0);
+            await using var origen = archivo.OpenReadStream();
+            await origen.CopyToAsync(buffer, cancellationToken);
+
+            nuevas.Add(new ImagenNuevaDto
+            {
+                Contenido = buffer.ToArray(),
+                NombreArchivo = archivo.FileName,
+                ContentType = archivo.ContentType,
+            });
+        }
+
+        var (valor, error, status) = await admin.ReemplazarImagenesAsync(
+            id, imagenes, nuevas, cancellationToken);
+
+        if (valor is null)
+        {
+            return StatusCode(status, new ProblemDetails
+            {
+                Title = "No se pudieron guardar las imágenes",
+                Detail = error,
+                Status = status,
+            });
+        }
+
+        return Ok(valor);
     }
 
     /// <summary>Reemplaza la lista de imágenes (orden + principal) de un producto.</summary>

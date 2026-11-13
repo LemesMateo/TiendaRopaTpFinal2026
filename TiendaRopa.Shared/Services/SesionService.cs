@@ -24,6 +24,17 @@ public sealed class SesionService(IPreferenciasLocal almacenamiento)
 
     public bool EsAdministrador => string.Equals(Usuario?.Rol, "Administrador", StringComparison.Ordinal);
 
+    /// <summary>True si el usuario es del personal de tienda (Administrador o Vendedor).</summary>
+    public bool EsPersonalTienda =>
+        EsAdministrador || string.Equals(Usuario?.Rol, "Vendedor", StringComparison.Ordinal);
+
+    /// <summary>
+    /// True si el rol del usuario tiene el permiso indicado. La autorización
+    /// real la decide el backend; esto sólo sirve para mostrar u ocultar UI.
+    /// </summary>
+    public bool TienePermiso(string permiso)
+        => Usuario?.Permisos.Contains(permiso, StringComparer.Ordinal) == true;
+
     /// <summary>Carga la sesión persistida (llamar desde OnAfterRenderAsync: necesita JS).</summary>
     public async Task CargarAsync()
     {

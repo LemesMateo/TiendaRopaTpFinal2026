@@ -412,10 +412,22 @@ Reglas en `TiendaRopa.Contracts/Catalogo/ProductoImagenes.cs`:
 ### API
 - `POST /api/admin/productos/{id}/imagenes` (multipart `archivo`): sube **por streaming**
   (`CopyToAsync` a `FileStream`), valida límite, tamaño, tipo y firma; devuelve la fila creada.
-- `PUT /api/admin/productos/{id}/imagenes`: reemplaza la lista (orden + principal). Valida el
-  máximo de 5 y que las rutas sean del prefijo permitido. Si se quita una imagen, el archivo
-  huérfano se borra del disco.
-- `ProductoAdminDto` ahora incluye `Imagenes` (la principal primero).
+  Sigue existiendo para altas sueltas, pero el formulario ya no lo usa.
+- `PUT /api/admin/productos/{id}/imagenes/lote` (**el que usa el formulario**): reemplaza la lista
+  **completa de imágenes vigentes** en una sola operación atómica (bajas + altas + orden +
+  principal). Cuerpo multipart:
+  - `imagenes`: JSON con la lista final en orden. `id > 0` = imagen que se conserva;
+    `id = 0` = archivo nuevo referenciado por `indiceNueva`.
+  - `archivo0`, `archivo1`, …: los archivos nuevos del lote.
+
+  El límite de 5 se evalúa sobre la **lista final**, no sobre las filas que todavía existen en la
+  base. Por eso *5 → quitar 2 → agregar 2* en el mismo guardado es válido.
+  Si algo falla no se persiste nada (transacción + `CreateExecutionStrategy`) y los archivos nuevos
+  ya escritos se borran: un error no deja huérfanos ni pierde imágenes existentes.
+- `PUT /api/admin/productos/{id}/imagenes`: reemplaza la lista (orden + principal) por rutas ya
+  existentes. Valida el máximo de 5 y el prefijo de ruta. Se mantiene por compatibilidad.
+- `ProductoAdminDto` incluye `Imagenes` ordenadas por `Orden` (la principal se distingue por su
+  bandera, **no** se mueve al frente: moverla alteraría el orden guardado).
 
 ### Interfaz
 - Nueva sección **Imágenes** debajo de la **Descripción** (componente `AdminImagenesEditor`).
@@ -431,6 +443,24 @@ Reglas en `TiendaRopa.Contracts/Catalogo/ProductoImagenes.cs`:
   imagen con el `HttpClient` de la app y la sirve como data URL (evita el *mixed content*).
 - Errores claros: archivo inválido, cancelado (no es error), límite alcanzado, tamaño exceeded.
 
+#### Dónde se muestran los mensajes (formulario de producto)
+- **Aviso del formulario** (`mensajeForm`): dentro de la tarjeta, **inmediatamente encima de
+  Guardar/Cancelar**. Es donde está mirando el usuario al guardar. Lleva `role="alert"`,
+  `tabindex="-1"` y recibe el foco por código (`FocusAsync`) para anunciarse y desplazar la vista.
+- **Aviso de imágenes**: si el error viene de la sección de imágenes, el texto se prefija con
+  `Imágenes: ` y se muestra junto a Guardar además de en la propia sección.
+- **Aviso de la página** (`mensajeLista`): errores de conexión y confirmaciones del listado, arriba
+  de la lista. Nunca reemplaza al del formulario, así no queda un error viejo sobre el formulario.
+- **Aviso de variantes** (`mensajeVariante`): dentro del acordeón, junto a «Guardar variante».
+- Los avisos se limpian al abrir/recargar/cancelar un producto y al cambiar la lista de imágenes
+  (quitar, mover, marcar principal, subir), para no mostrar mensajes de un estado ya resuelto.
+
+### Fuente única del conteo
+`ProductoImagenes.MaximoPorProducto` (Contratos) es la única constante: la usan el editor, el
+selector nativo de MAUI, el `AdminService` y el controlador. El cálculo del espacio libre en el
+frontend es `5 − imagenesProducto.Count`, es decir, la lista **vigente del formulario**, y el
+servidor vuelve a validar sobre la lista final recibida.
+
 ## 4. Verificaciones reales
 
 | Qué | Resultado |
@@ -443,11 +473,14 @@ Reglas en `TiendaRopa.Contracts/Catalogo/ProductoImagenes.cs`:
 | `dotnet build TiendaRopa -f net10.0-windows10.0.19041.0` | OK |
 | `scripts/api-tests.ps1` | **47 PASS / 0 FAIL** |
 | `scripts/sql-verify.ps1` | **40 PASS / 0 FAIL** |
-| `scripts/web-tests.mjs` (Playwright 390/768/1440) | **66 PASS / 0 FAIL** |
+| `scripts/web-tests.mjs` (Playwright 390/768/1440) | **79 PASS / 0 FAIL** (incluye 13 del formulario de imágenes) |
+| `dotnet test TiendaRopa.Tests` | **64 PASS / 0 FAIL** (11 de `ImagenesProductoTests`) |
 | Navegador: sin scroll horizontal | 320/360/390/768/1024/1440 en admin, catálogo, pedidos, catálogos, home, detalle, carrito, mis pedidos, login |
 | Navegador: límite de 5 | 5/5 y aviso de máximo |
 | Navegador: archivo inválido | *"'no-es-imagen.txt' no es una imagen JPEG o PNG."* |
-| API: 6ª imagen | **400** *"El producto ya tiene el máximo de 5 imágenes."* |
+| Navegador: 5 → quitar 2 → agregar 2 | **se guarda** (antes: 400 *"ya tiene el máximo de 5 imágenes"*) |
+| API: lista final con 6 imágenes | **400** *"Un producto admite hasta 5 imágenes y la lista final tiene 6."* |
+| API: imagen de otro producto | **409** *"Alguna de las imágenes ya no pertenece al producto…"* |
 | API: tipo no permitido | **400** *"Sólo se aceptan imágenes JPEG o PNG."* |
 | API: .txt con MIME image/png | **400** *"El archivo no es una imagen JPEG o PNG válida."* |
 
@@ -469,3 +502,151 @@ Dos ajustes mínimos al script existente (no se agregaron dependencias):
 - **iOS / MacCatalyst**: requieren macOS → no verificados.
 - En Android, el `MediaPicker` exige permisos de galería en algunas versiones de Android;
   no se probó en dispositivo.
+
+---
+
+# Incremento 4 — Asistente conversacional con Gemini (Function Calling)
+
+Fecha: 2026-11-11. Estado: **implementado y verificado en Web, Android y Windows**.
+
+Detalle completo en **[docs/asistente.md](asistente.md)**.
+
+## Resumen
+
+- **Gemini** vía la biblioteca oficial `Google.GenAI` 2.1.0, con **Function Calling**:
+  declaraciones de funciones, ejecución validada en C# y devolución de resultados al
+  modelo en un bucle acotado.
+- Modelo por defecto **`gemini-3.5-flash-lite`** (configurable en `appsettings.json`;
+  `gemini-3.8-flash` se activa cambiando una línea, sin tocar la arquitectura).
+- **La API key vive únicamente en los secretos de usuario de `TiendaRopa.Api`**
+  (`Asistente:Gemini:ApiKey`). Nunca viaja a MAUI, Web ni Shared.
+- **5 herramientas de solo lectura**: `listar_mis_pedidos`, `consultar_pedido`,
+  `consultar_mis_datos`, `buscar_producto`, `consultar_variantes`.
+  La identidad se resuelve **siempre** del JWT; un cliente nunca ve pedidos de otro;
+  la IA no ejecuta SQL arbitrario.
+- **Nota de estado pública por pedido** (nueva entidad `PedidoNota` + migración
+  `20261111224424_AddPedidoNota`): el administrador la publica desde
+  `/admin/pedidos`; el cliente la ve en `/mis-pedidos` y el chatbot la usa para
+  responder consultas de envío (con empresa y código de seguimiento opcionales).
+- **Componente `ChatBot` en `TiendaRopa.Shared`**, integrado en `MainLayout`:
+  botón flotante `support_agent`, panel lateral en escritorio y casi a pantalla
+  completa en móvil, mensajes diferenciados, indicador de escritura, sugerencias
+  iniciales clicables, opciones de pedido seleccionables y tarjetas de acción
+  propuesta (Confirmar/Cancelar) **que en este incremento no envían nada**.
+- **Contratos del segundo incremento** ya diseñados: `SolicitudConsultaPedidoDto` y
+  `SolicitudReposicionVarianteDto`.
+
+## Endpoints nuevos
+
+| Ruta | Auth | Descripción |
+|---|---|---|
+| `POST /api/asistente/mensaje` | opcional | Un turno de conversación. `400` mensaje vacío · `503` sin configurar. |
+| `GET /api/admin/pedidos/{id}/notas` | Administrador | Historial de actualizaciones públicas. |
+| `POST /api/admin/pedidos/{id}/notas` | Administrador | Publica una actualización. |
+
+## Migración
+
+`20261111224424_AddPedidoNota` — crea la tabla `PedidoNota` con su FK a `Pedido`
+(Cascade) y dos índices (`IdPedido`, `IdPedido + FechaActualizacion`).
+**Aplicada y verificada** en `VelvetRoseDev`.
+
+## Resultados de las pruebas (reales)
+
+| Suite | Resultado |
+|---|---|
+| `dotnet test TiendaRopa.Tests` (xUnit, nuevo) | **27 PASS / 0 FAIL** |
+| `scripts/asistente-tests.ps1` (API + SQL Server real) | **26 PASS / 0 FAIL** |
+| `scripts/chat-web-tests.mjs` (Playwright 390/768/1440) | **61 PASS / 0 FAIL** |
+| Android (emulador `MAUI_Emulator_API_36` + ADB) | recorrido real verificado · **0 excepciones** en logcat |
+| Windows (MAUI WinUI, app ejecutada) | panel lateral verificado con captura |
+| `dotnet build` solución completa | 0 errores, 0 warnings de C# |
+
+## Pendiente
+
+- **Gemini real sin verificar**: en esta máquina no hay ninguna clave de la API de
+  Gemini disponible. Lo verificado contra la API real de Google es el ciclo
+  request/response (la API alcanzó `generativelanguage.googleapis.com` y tradujo
+  el `400 API_KEY_INVALID` a `configuracion_invalida`). Con una clave válida se
+  activa el modelo real (configuración en `docs/asistente.md` §2.2).
+- **iOS / MacCatalyst**: requieren macOS → no compilados ni probados.
+- Segundo incremento: persistir las solicitudes (Confirmar/Cancelar reales),
+  notificaciones administrativas y seguimiento automático.
+
+---
+
+# Incremento 5 — Solicitudes reales, rol Vendedor y notificaciones a la tienda
+
+Fecha: 2026-11-11. Estado: **implementado y verificado** (API + SQL Server, Web con
+Playwright, MAUI Android con emulador).
+
+Detalle completo en **[docs/asistente.md](asistente.md)** §0-bis.
+
+## Resumen
+
+- **Rol `Vendedor`** con permisos restringidos: consulta y gestiona pedidos y
+  solicitudes; **no** toca el catálogo ni los usuarios (exclusivos del
+  Administrador). Los permisos se definen en `Auth/Permisos.cs` y se aplican con
+  políticas por permiso (`PermisoHandler`).
+- **`SolicitudAtencion`**: el cliente puede dejar una consulta de pedido, una
+  consulta general o un pedido de reposición. Si la variante no existe, describe
+  la combinación en texto (sin inventar `IdProductoVariante`).
+- **Confirmación explícita**: Gemini **prepara** una `SolicitudPropuesta` (nunca
+  envía); el botón **Confirmar y enviar** del chat llama a un endpoint protegido
+  que revalida propiedad del pedido, producto, contenido y destinatarios.
+- **Idempotencia**: índice único filtrado por `ClaveIdempotencia` y por
+  `IdPropuesta` → doble clic o reintento no duplican nada.
+- **Teléfono**: se muestra siempre enmascarado (`***01`); se puede confirmar otro
+  número y decidir si se guarda en el perfil (consentimiento expreso). Nunca
+  viaja completo a Gemini.
+- **Notificaciones internas** persistidas en SQL Server para Administrador y
+  Vendedor, con campana y contador de pendientes en el panel.
+
+## Migración
+
+`20261112010921_AddSolicitudesYNotificaciones` — crea `SolicitudAtencion`,
+`SolicitudPropuesta` y `Notificacion` (con FK a `Pedido`, `Cliente` y `Producto`).
+**Aplicada y verificada** en `VelvetRoseDev`.
+
+## Endpoints nuevos
+
+| Ruta | Auth | Descripción |
+|---|---|---|
+| `POST /api/asistente/propuestas` | Cliente | Crea la propuesta (lo que hace Gemini). |
+| `GET /api/asistente/propuestas` | Cliente | Propuestas pendientes del cliente. |
+| `GET /api/asistente/propuestas/{id}` | Cliente | Detalle de una propuesta propia. |
+| `PUT /api/asistente/propuestas/{id}/telefono` | Cliente | Fija (y opcionalmente guarda) el teléfono. |
+| `POST /api/asistente/propuestas/{id}/confirmar` | Cliente | **Única escritura**: crea la solicitud. |
+| `POST /api/asistente/propuestas/{id}/cancelar` | Cliente | Cancela la propuesta (no crea nada). |
+| `GET /api/mis-solicitudes` | Cliente | Solicitudes del cliente con la respuesta de la tienda. |
+| `GET /api/solicitudes` | Personal | Listado para la tienda. |
+| `GET /api/solicitudes/{id}` | Personal | Detalle (teléfono y email del cliente). |
+| `POST /api/solicitudes/{id}/responder` | Personal | Responde la solicitud. |
+| `POST /api/solicitudes/{id}/estado` | Personal | Cambia el estado. |
+| `GET /api/notificaciones` | Personal | Notificaciones + contador de pendientes. |
+| `GET /api/notificaciones/pendientes` | Personal | Sólo el contador. |
+| `POST /api/notificaciones/{id}/leer` | Personal | Marca leída. |
+| `POST /api/notificaciones/leer-todas` | Personal | Marca todas leídas. |
+
+> **Cambio de autorización**: los endpoints de pedidos (`/api/admin/pedidos`,
+> `/api/admin/pedidos/{id}/notas`) conservan la URL pero los sirve ahora
+> `TiendaController` (Administrador **o** Vendedor). El catálogo
+> (`/api/admin/productos`, `/api/admin/categorias`, …) sigue siendo exclusivo
+> del Administrador.
+
+## Resultados de las pruebas (reales)
+
+| Suite | Resultado |
+|---|---|
+| `dotnet test TiendaRopa.Tests` (xUnit) | **53 PASS / 0 FAIL** (incluye los 6 tests de thought signature) |
+| `scripts/asistente-tests.ps1` | **26 PASS / 0 FAIL** |
+| `scripts/solicitudes-tests.ps1` (API + SQL Server) | **39 PASS / 0 FAIL** |
+| `scripts/chat-web-tests.mjs` (Playwright 390/768/1440) | **61 PASS / 0 FAIL** |
+| `scripts/solicitudes-web-tests.mjs` (Playwright) | **23 PASS / 0 FAIL** |
+| MAUI Android (emulador API 36) | login `200` · tarjeta con teléfono enmascarado · **`POST /propuestas/52/confirmar → 201`** · solicitud #25 en SQL Server con `TelefonoEstado = confirmado` · 2 notificaciones (admin + vendedor) · panel `/admin/solicitudes` con `200` en solicitudes y notificaciones · **0 excepciones** en logcat |
+| MAUI Windows | panel lateral del chat verificado con captura |
+| `dotnet build` solución | 0 errores, 0 warnings de C# |
+
+> Nota de entorno: en el emulador, Gboard mangla el texto escrito con
+> `adb shell input text`; el script `scripts/android-solicitudes.ps1` escribe con
+> **keycodes de Android**. Los keycodes de **dígitos** no funcionan en ese
+> emulador, por eso el usuario de prueba no lleva dígitos.

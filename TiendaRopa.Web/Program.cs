@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.DataProtection;
 using TiendaRopa.Api;
 using TiendaRopa.Contracts.Admin;
+using TiendaRopa.Contracts.Asistente;
 using TiendaRopa.Contracts.Catalogo;
 using TiendaRopa.Contracts.Identidad;
 using TiendaRopa.Contracts.Pedidos;
@@ -58,6 +59,18 @@ builder.Services.AddSingleton<ICatalogoService>(_ => new HttpCatalogoService(htt
 builder.Services.AddScoped<IPreferenciasLocal, PreferenciasLocal>();
 builder.Services.AddScoped<SesionService>();
 builder.Services.AddScoped<CarritoService>();
+
+// Asistente conversacional (Gemini). La API key vive sólo en el backend:
+// el frontend nunca la ve, sólo llama a /api/asistente/mensaje.
+builder.Services.AddScoped<ChatContexto>();
+builder.Services.AddScoped<IChatService>(sp =>
+    new HttpChatService(sp.GetRequiredService<HttpClient>(), sp.GetRequiredService<SesionService>()));
+
+// Solicitudes de atención y notificaciones internas de la tienda.
+builder.Services.AddScoped<ISolicitudService>(sp =>
+    new HttpSolicitudService(sp.GetRequiredService<HttpClient>(), sp.GetRequiredService<SesionService>()));
+builder.Services.AddScoped<INotificacionService>(sp =>
+    new HttpNotificacionService(sp.GetRequiredService<HttpClient>(), sp.GetRequiredService<SesionService>()));
 
 // Clientes de API autenticados (JWT).
 builder.Services.AddScoped<IAuthService>(sp =>

@@ -1,0 +1,702 @@
+{
+  "metadatos": {
+    "titulo": "Catálogo Velvet Rose Boutique para generación de fotografías con IA",
+    "descripcion": "Exportación de solo lectura del catálogo real almacenado en la base de datos de desarrollo (VelvetRoseDev). No contiene datos de usuarios, clientes, pedidos ni secretos.",
+    "origenDeDatos": "SQL Server localhost (MSSQLSERVER) / base VelvetRoseDev / consultas de solo lectura",
+    "fechaExportacion": "2026-11-12",
+    "totalProductos": 9,
+    "totalVariantes": 27,
+    "totalColoresEnCatalogo": 4,
+    "totalCombinacionesProductoColor": 13,
+    "moneda": "ARS",
+    "notaImportante": "Los colores que aparecen en cada producto son colores REALES del catálogo de prendas (rosa, negro, marfil, ciruela). No deben confundirse con los colores de la identidad visual de la marca (frambuesa #C51E3A y ciruela #41284C), que se usan solo como acentos de ambientación.",
+    "advertenciaDeFidelidad": "Toda la sección referenciaVisual se derivó únicamente del nombre y la descripción registrados en la base. Los campos no identificables quedaron en null a propósito: no deben completarse por suposición."
+  },
+
+  "estiloFotograficoGlobal": {
+    "marca": "Velvet Rose Boutique",
+    "descripcionGeneral": "Moda femenina elegante, romántica y moderna. Fotografía realista de ecommerce boutique, con estética limpia y sofisticada; la prenda es siempre la protagonista de la imagen.",
+    "paletaMarca": {
+      "fondoMarfilCalido": "#F8F4ED",
+      "acentoFrambuesa": "#C51E3A",
+      "acentoCiruela": "#41284C",
+      "nota": "El fondo marfil cálido es el color base de todas las fotografías. Frambuesa y ciruela se usan únicamente como acentos de ambientación (props, superficies secundarias, detalles de escenografía) cuando corresponda."
+    },
+    "fondo": "Fondo marfil cálido (#F8F4ED) liso o con textura muy sutil; ambientes neutros elegantes (papel, lino, yeso, madera clara desaturada). Sin estampados ni gráficos de fondo que compitan con la prenda.",
+    "iluminacion": "Luz suave, difusa y uniforme, tipo luz de ventana o softbox grande. Sin sombras duras, sin contraluz agresivo, sin reflejos especulares fuertes. Exposición pareja entre todas las tomas del catálogo.",
+    "modelos": "Modelos femeninas adultas. Rostro fuera del encuadre (recorte desde el cuello hacia abajo o encuadre que excluye la cara). Postura natural, relajada y elegante, sin gestos marcados. Sin accesorios llamativos que desvíen la atención de la prenda.",
+    "composicion": "Encuadres y proporciones consistentes entre todos los productos: misma altura de cámara, misma distancia focal equivalente y mismo margen respecto de los bordes. La prenda ocupa el centro del encuadre y se ve completa, sin cortes que oculten partes relevantes.",
+    "formato": {
+      "relacionDeAspecto": "4:5",
+      "orientacion": "vertical",
+      "uso": "Fotografía principal; adaptable a las tarjetas del catálogo (recorte centrado seguro).",
+      "resolucionSugerida": "1600x2000 px o superior"
+    },
+    "consistencia": "Todas las imágenes de una misma sesión deben compartir temperatura de color, intensidad de luz y altura de cámara para que el catálogo se vea como una unidad.",
+    "restricciones": [
+      "No alterar el color real de la prenda: el color de la ficha (ver coloresDisponibles / imagenesPendientes) manda sobre cualquier tinte de la escena.",
+      "No inventar estampados, bordados, botones, cierres, forros ni detalles que no estén descritos.",
+      "No mostrar marcas, logos de terceros ni texto legible en la imagen.",
+      "No usar fondos con color de marca saturado que modifiquen la percepción del color de la prenda.",
+      "La pieza que se fotografía corresponde a un único color por imagen; no mezclar dos colores del producto en la misma toma principal."
+    ],
+    "recomendacionesDePrompt": [
+      "Indicar explícitamente el color de la prenda del catálogo en el prompt.",
+      "Repetir el bloque de estilo (fondo marfil #F8F4ED, luz suave, modelo sin rostro, formato 4:5) en cada generación.",
+      "Mencionar solo los atributos presentes en referenciaVisual; omitir los campos null en lugar de rellenarlos con suposiciones."
+    ]
+  },
+
+  "productos": [
+    {
+      "idProducto": 1,
+      "nombre": "Vestido Rococó Midi",
+      "descripcion": "Vestido midi con vuelo y cinturón, tejido liviano para primavera.",
+      "categoria": "Vestidos",
+      "idCategoria": 1,
+      "precioBase": 45990.00,
+      "activo": true,
+      "imagenesActuales": [
+        { "idProductoImagen": 1, "url": "/img/productos/p1-1.png", "orden": 1, "principal": true },
+        { "idProductoImagen": 2, "url": "/img/productos/p1-2.png", "orden": 2, "principal": false },
+        { "idProductoImagen": 3, "url": "/img/productos/p1-3.png", "orden": 3, "principal": false }
+      ],
+      "coloresUnicos": [
+        {
+          "color": "Rosa",
+          "codigoHex": "#F3A6B6",
+          "talles": ["S", "M"],
+          "idsVariantes": [1, 2],
+          "stockTotal": 10
+        },
+        {
+          "color": "Ciruela",
+          "codigoHex": "#5C2D69",
+          "talles": ["L"],
+          "idsVariantes": [3],
+          "stockTotal": 5
+        }
+      ],
+      "variantes": [
+        { "idProductoVariante": 1, "color": "Rosa", "codigoHex": "#F3A6B6", "talle": "S", "precio": 45990.00, "precioPropioVariante": null, "stock": 5, "disponible": true },
+        { "idProductoVariante": 2, "color": "Rosa", "codigoHex": "#F3A6B6", "talle": "M", "precio": 45990.00, "precioPropioVariante": null, "stock": 5, "disponible": true },
+        { "idProductoVariante": 3, "color": "Ciruela", "codigoHex": "#5C2D69", "talle": "L", "precio": 45990.00, "precioPropioVariante": null, "stock": 5, "disponible": true }
+      ],
+      "referenciaVisual": {
+        "tipoPrenda": "Vestido",
+        "coloresDisponibles": [
+          { "nombre": "Rosa", "codigoHex": "#F3A6B6" },
+          { "nombre": "Ciruela", "codigoHex": "#5C2D69" }
+        ],
+        "detallesDeLaPrenda": "Vuelo y cinturón",
+        "material": "Tejido liviano",
+        "textura": null,
+        "tipoDeCorte": null,
+        "largo": "Midi",
+        "mangas": null,
+        "cuello": null,
+        "otrosDetalles": "Cinturón incluido; falda con vuelo. Referencia de temporada: primavera.",
+        "cantidadImagenesRecomendadas": 2
+      }
+    },
+    {
+      "idProducto": 2,
+      "nombre": "Vestido Satinado Noche",
+      "descripcion": "Vestido de satén con cuello barco, ideal para eventos.",
+      "categoria": "Vestidos",
+      "idCategoria": 1,
+      "precioBase": 62990.00,
+      "activo": true,
+      "imagenesActuales": [
+        { "idProductoImagen": 4, "url": "/img/productos/p2-1.png", "orden": 1, "principal": true },
+        { "idProductoImagen": 5, "url": "/img/productos/p2-2.png", "orden": 2, "principal": false },
+        { "idProductoImagen": 6, "url": "/img/productos/p2-3.png", "orden": 3, "principal": false }
+      ],
+      "coloresUnicos": [
+        {
+          "color": "Negro",
+          "codigoHex": "#1C1C1E",
+          "talles": ["S", "M", "L"],
+          "idsVariantes": [4, 5, 6],
+          "stockTotal": 15
+        }
+      ],
+      "variantes": [
+        { "idProductoVariante": 4, "color": "Negro", "codigoHex": "#1C1C1E", "talle": "S", "precio": 62990.00, "precioPropioVariante": null, "stock": 5, "disponible": true },
+        { "idProductoVariante": 5, "color": "Negro", "codigoHex": "#1C1C1E", "talle": "M", "precio": 62990.00, "precioPropioVariante": null, "stock": 5, "disponible": true },
+        { "idProductoVariante": 6, "color": "Negro", "codigoHex": "#1C1C1E", "talle": "L", "precio": 62990.00, "precioPropioVariante": null, "stock": 5, "disponible": true }
+      ],
+      "referenciaVisual": {
+        "tipoPrenda": "Vestido",
+        "coloresDisponibles": [
+          { "nombre": "Negro", "codigoHex": "#1C1C1E" }
+        ],
+        "detallesDeLaPrenda": "Cuello barco",
+        "material": "Satén",
+        "textura": "Satinada (según el nombre del producto)",
+        "tipoDeCorte": null,
+        "largo": null,
+        "mangas": null,
+        "cuello": "Cuello barco",
+        "otrosDetalles": "Pensado para eventos. No se especifica largo, manga ni tipo de falda.",
+        "cantidadImagenesRecomendadas": 1
+      }
+    },
+    {
+      "idProducto": 3,
+      "nombre": "Vestido Campo Cropped",
+      "descripcion": "Vestido corto con encaje, cómodo y fresco.",
+      "categoria": "Vestidos",
+      "idCategoria": 1,
+      "precioBase": 34990.00,
+      "activo": true,
+      "imagenesActuales": [
+        { "idProductoImagen": 7, "url": "/img/productos/p3-1.png", "orden": 1, "principal": true },
+        { "idProductoImagen": 8, "url": "/img/productos/p3-2.png", "orden": 2, "principal": false },
+        { "idProductoImagen": 9, "url": "/img/productos/p3-3.png", "orden": 3, "principal": false }
+      ],
+      "coloresUnicos": [
+        {
+          "color": "Marfil",
+          "codigoHex": "#F5EFE3",
+          "talles": ["S", "M"],
+          "idsVariantes": [7, 8],
+          "stockTotal": 12
+        }
+      ],
+      "variantes": [
+        { "idProductoVariante": 7, "color": "Marfil", "codigoHex": "#F5EFE3", "talle": "S", "precio": 34990.00, "precioPropioVariante": null, "stock": 5, "disponible": true },
+        { "idProductoVariante": 8, "color": "Marfil", "codigoHex": "#F5EFE3", "talle": "M", "precio": 34990.00, "precioPropioVariante": null, "stock": 7, "disponible": true }
+      ],
+      "referenciaVisual": {
+        "tipoPrenda": "Vestido",
+        "coloresDisponibles": [
+          { "nombre": "Marfil", "codigoHex": "#F5EFE3" }
+        ],
+        "detallesDeLaPrenda": "Encaje",
+        "material": null,
+        "textura": "Encaje",
+        "tipoDeCorte": null,
+        "largo": "Corto",
+        "mangas": null,
+        "cuello": null,
+        "otrosDetalles": "Nombre de línea \"Campo\" y \"Cropped\". No se especifica dónde se ubica el encaje ni el tipo de manga.",
+        "cantidadImagenesRecomendadas": 1
+      }
+    },
+    {
+      "idProducto": 4,
+      "nombre": "Blusa Pompoir Marfil",
+      "descripcion": "Blusa de pompoir con manga bombacha.",
+      "categoria": "Blusas",
+      "idCategoria": 2,
+      "precioBase": 28500.00,
+      "activo": true,
+      "imagenesActuales": [
+        { "idProductoImagen": 10, "url": "/img/productos/p4-1.png", "orden": 1, "principal": true },
+        { "idProductoImagen": 11, "url": "/img/productos/p4-2.png", "orden": 2, "principal": false },
+        { "idProductoImagen": 12, "url": "/img/productos/p4-3.png", "orden": 3, "principal": false }
+      ],
+      "coloresUnicos": [
+        {
+          "color": "Marfil",
+          "codigoHex": "#F5EFE3",
+          "talles": ["S", "M", "L"],
+          "idsVariantes": [9, 10, 11],
+          "stockTotal": 16
+        }
+      ],
+      "variantes": [
+        { "idProductoVariante": 9, "color": "Marfil", "codigoHex": "#F5EFE3", "talle": "S", "precio": 28500.00, "precioPropioVariante": null, "stock": 5, "disponible": true },
+        { "idProductoVariante": 10, "color": "Marfil", "codigoHex": "#F5EFE3", "talle": "M", "precio": 28500.00, "precioPropioVariante": null, "stock": 6, "disponible": true },
+        { "idProductoVariante": 11, "color": "Marfil", "codigoHex": "#F5EFE3", "talle": "L", "precio": 28500.00, "precioPropioVariante": null, "stock": 5, "disponible": true }
+      ],
+      "referenciaVisual": {
+        "tipoPrenda": "Blusa",
+        "coloresDisponibles": [
+          { "nombre": "Marfil", "codigoHex": "#F5EFE3" }
+        ],
+        "detallesDeLaPrenda": "Manga bombacha",
+        "material": null,
+        "textura": null,
+        "tipoDeCorte": null,
+        "largo": null,
+        "mangas": "Manga bombacha",
+        "cuello": null,
+        "otrosDetalles": "El término \"pompoir\" aparece en nombre y descripción sin más especificación; no debe interpretarse como un detalle constructivo inventado.",
+        "cantidadImagenesRecomendadas": 1
+      }
+    },
+    {
+      "idProducto": 5,
+      "nombre": "Remera Oversize Ciruela",
+      "descripcion": "Remera oversize de algodón peinado.",
+      "categoria": "Blusas",
+      "idCategoria": 2,
+      "precioBase": 19990.00,
+      "activo": true,
+      "imagenesActuales": [
+        { "idProductoImagen": 13, "url": "/img/productos/p5-1.png", "orden": 1, "principal": true },
+        { "idProductoImagen": 14, "url": "/img/productos/p5-2.png", "orden": 2, "principal": false },
+        { "idProductoImagen": 15, "url": "/img/productos/p5-3.png", "orden": 3, "principal": false }
+      ],
+      "coloresUnicos": [
+        {
+          "color": "Ciruela",
+          "codigoHex": "#5C2D69",
+          "talles": ["M", "L", "XL"],
+          "idsVariantes": [12, 13, 14],
+          "stockTotal": 19
+        }
+      ],
+      "variantes": [
+        { "idProductoVariante": 12, "color": "Ciruela", "codigoHex": "#5C2D69", "talle": "M", "precio": 19990.00, "precioPropioVariante": null, "stock": 8, "disponible": true },
+        { "idProductoVariante": 13, "color": "Ciruela", "codigoHex": "#5C2D69", "talle": "L", "precio": 19990.00, "precioPropioVariante": null, "stock": 6, "disponible": true },
+        { "idProductoVariante": 14, "color": "Ciruela", "codigoHex": "#5C2D69", "talle": "XL", "precio": 19990.00, "precioPropioVariante": null, "stock": 5, "disponible": true }
+      ],
+      "referenciaVisual": {
+        "tipoPrenda": "Remera",
+        "coloresDisponibles": [
+          { "nombre": "Ciruela", "codigoHex": "#5C2D69" }
+        ],
+        "detallesDeLaPrenda": "Calce amplio (oversize)",
+        "material": "Algodón peinado",
+        "textura": null,
+        "tipoDeCorte": "Oversize",
+        "largo": null,
+        "mangas": null,
+        "cuello": null,
+        "otrosDetalles": "No se especifica tipo de cuello ni largo de manga. Sin estampa declarada.",
+        "cantidadImagenesRecomendadas": 1
+      }
+    },
+    {
+      "idProducto": 6,
+      "nombre": "Pantalón Wide Leg",
+      "descripcion": "Pantalón de pierna anoda con cintura alta.",
+      "categoria": "Pantalones",
+      "idCategoria": 3,
+      "precioBase": 46500.00,
+      "activo": true,
+      "imagenesActuales": [
+        { "idProductoImagen": 16, "url": "/img/productos/p6-1.png", "orden": 1, "principal": true },
+        { "idProductoImagen": 17, "url": "/img/productos/p6-2.png", "orden": 2, "principal": false },
+        { "idProductoImagen": 18, "url": "/img/productos/p6-3.png", "orden": 3, "principal": false }
+      ],
+      "coloresUnicos": [
+        {
+          "color": "Negro",
+          "codigoHex": "#1C1C1E",
+          "talles": ["S", "M", "L"],
+          "idsVariantes": [15, 16, 17],
+          "stockTotal": 15
+        }
+      ],
+      "variantes": [
+        { "idProductoVariante": 15, "color": "Negro", "codigoHex": "#1C1C1E", "talle": "S", "precio": 46500.00, "precioPropioVariante": null, "stock": 5, "disponible": true },
+        { "idProductoVariante": 16, "color": "Negro", "codigoHex": "#1C1C1E", "talle": "M", "precio": 46500.00, "precioPropioVariante": null, "stock": 5, "disponible": true },
+        { "idProductoVariante": 17, "color": "Negro", "codigoHex": "#1C1C1E", "talle": "L", "precio": 46500.00, "precioPropioVariante": null, "stock": 5, "disponible": true }
+      ],
+      "referenciaVisual": {
+        "tipoPrenda": "Pantalón",
+        "coloresDisponibles": [
+          { "nombre": "Negro", "codigoHex": "#1C1C1E" }
+        ],
+        "detallesDeLaPrenda": "Cintura alta",
+        "material": null,
+        "textura": null,
+        "tipoDeCorte": "Pierna ancha (wide leg)",
+        "largo": null,
+        "mangas": null,
+        "cuello": null,
+        "otrosDetalles": "La descripción original dice \"pierna anoda\" (error de tipeo por \"ancha\"), coherente con el nombre Wide Leg. No se especifica material, cierre, bolsillos ni largo.",
+        "cantidadImagenesRecomendadas": 1
+      }
+    },
+    {
+      "idProducto": 7,
+      "nombre": "Jeans Clásico Alto",
+      "descripcion": "Jeans de tiro alto, corte recto, denim con stretch.",
+      "categoria": "Pantalones",
+      "idCategoria": 3,
+      "precioBase": 51990.00,
+      "activo": true,
+      "imagenesActuales": [
+        { "idProductoImagen": 19, "url": "/img/productos/p7-1.png", "orden": 1, "principal": true },
+        { "idProductoImagen": 20, "url": "/img/productos/p7-2.png", "orden": 2, "principal": false },
+        { "idProductoImagen": 21, "url": "/img/productos/p7-3.png", "orden": 3, "principal": false }
+      ],
+      "coloresUnicos": [
+        {
+          "color": "Negro",
+          "codigoHex": "#1C1C1E",
+          "talles": ["M", "L", "XL"],
+          "idsVariantes": [18, 19, 20],
+          "stockTotal": 16
+        }
+      ],
+      "variantes": [
+        { "idProductoVariante": 18, "color": "Negro", "codigoHex": "#1C1C1E", "talle": "M", "precio": 51990.00, "precioPropioVariante": null, "stock": 6, "disponible": true },
+        { "idProductoVariante": 19, "color": "Negro", "codigoHex": "#1C1C1E", "talle": "L", "precio": 51990.00, "precioPropioVariante": null, "stock": 5, "disponible": true },
+        { "idProductoVariante": 20, "color": "Negro", "codigoHex": "#1C1C1E", "talle": "XL", "precio": 51990.00, "precioPropioVariante": null, "stock": 5, "disponible": true }
+      ],
+      "referenciaVisual": {
+        "tipoPrenda": "Jeans",
+        "coloresDisponibles": [
+          { "nombre": "Negro", "codigoHex": "#1C1C1E" }
+        ],
+        "detallesDeLaPrenda": "Tiro alto",
+        "material": "Denim con stretch",
+        "textura": null,
+        "tipoDeCorte": "Corte recto",
+        "largo": null,
+        "mangas": null,
+        "cuello": null,
+        "otrosDetalles": "No se especifican detalles de costuras, bolsillos, cierre ni largo de pierna.",
+        "cantidadImagenesRecomendadas": 1
+      }
+    },
+    {
+      "idProducto": 8,
+      "nombre": "Campera Acolchada Marfil",
+      "descripcion": "Campera acolchada liviana con capucha desmontable.",
+      "categoria": "Abrigos",
+      "idCategoria": 4,
+      "precioBase": 76990.00,
+      "activo": true,
+      "imagenesActuales": [
+        { "idProductoImagen": 22, "url": "/img/productos/p8-1.png", "orden": 1, "principal": true },
+        { "idProductoImagen": 23, "url": "/img/productos/p8-2.png", "orden": 2, "principal": false },
+        { "idProductoImagen": 24, "url": "/img/productos/p8-3.png", "orden": 3, "principal": false }
+      ],
+      "coloresUnicos": [
+        {
+          "color": "Marfil",
+          "codigoHex": "#F5EFE3",
+          "talles": ["S", "M"],
+          "idsVariantes": [21, 22],
+          "stockTotal": 10
+        },
+        {
+          "color": "Ciruela",
+          "codigoHex": "#5C2D69",
+          "talles": ["L"],
+          "idsVariantes": [23],
+          "stockTotal": 5
+        }
+      ],
+      "variantes": [
+        { "idProductoVariante": 21, "color": "Marfil", "codigoHex": "#F5EFE3", "talle": "S", "precio": 76990.00, "precioPropioVariante": null, "stock": 5, "disponible": true },
+        { "idProductoVariante": 22, "color": "Marfil", "codigoHex": "#F5EFE3", "talle": "M", "precio": 76990.00, "precioPropioVariante": null, "stock": 5, "disponible": true },
+        { "idProductoVariante": 23, "color": "Ciruela", "codigoHex": "#5C2D69", "talle": "L", "precio": 76990.00, "precioPropioVariante": null, "stock": 5, "disponible": true }
+      ],
+      "referenciaVisual": {
+        "tipoPrenda": "Campera",
+        "coloresDisponibles": [
+          { "nombre": "Marfil", "codigoHex": "#F5EFE3" },
+          { "nombre": "Ciruela", "codigoHex": "#5C2D69" }
+        ],
+        "detallesDeLaPrenda": "Capucha desmontable",
+        "material": null,
+        "textura": "Acolchada",
+        "tipoDeCorte": null,
+        "largo": null,
+        "mangas": null,
+        "cuello": null,
+        "otrosDetalles": "Liviana. No se especifica material exterior, relleno, cierre ni largo. El color \"Marfil\" del nombre coincide con el color registrado en la variante.",
+        "cantidadImagenesRecomendadas": 2
+      }
+    },
+    {
+      "idProducto": 9,
+      "nombre": "Abrigo Corte Redondo",
+      "descripcion": "Abrigo de lana con corte redondo y botones forrados.",
+      "categoria": "Blusas",
+      "idCategoria": 2,
+      "precioBase": 89990.00,
+      "activo": true,
+      "notaDeDatos": "En la base de datos este abrigo está clasificado en la categoría \"Blusas\" (IdCategoria 2), lo que parece un dato mal cargado. Se exporta tal cual está almacenado; no se modificó nada.",
+      "imagenesActuales": [
+        { "idProductoImagen": 1017, "url": "/img/productos/p9-1.png", "orden": 1, "principal": true },
+        { "idProductoImagen": 1018, "url": "/img/productos/p9-2.png", "orden": 2, "principal": false },
+        { "idProductoImagen": 1019, "url": "/img/productos/p9-3.png", "orden": 3, "principal": false }
+      ],
+      "coloresUnicos": [
+        {
+          "color": "Ciruela",
+          "codigoHex": "#5C2D69",
+          "talles": ["M"],
+          "idsVariantes": [24],
+          "stockTotal": 5
+        },
+        {
+          "color": "Marfil",
+          "codigoHex": "#F5EFE3",
+          "talles": ["M"],
+          "idsVariantes": [1002],
+          "stockTotal": 4
+        },
+        {
+          "color": "Negro",
+          "codigoHex": "#1C1C1E",
+          "talles": ["L", "XL"],
+          "idsVariantes": [25, 26],
+          "stockTotal": 10
+        }
+      ],
+      "variantes": [
+        { "idProductoVariante": 24, "color": "Ciruela", "codigoHex": "#5C2D69", "talle": "M", "precio": 89990.00, "precioPropioVariante": null, "stock": 5, "disponible": true },
+        { "idProductoVariante": 1002, "color": "Marfil", "codigoHex": "#F5EFE3", "talle": "M", "precio": 89990.00, "precioPropioVariante": null, "stock": 4, "disponible": true },
+        { "idProductoVariante": 25, "color": "Negro", "codigoHex": "#1C1C1E", "talle": "L", "precio": 89990.00, "precioPropioVariante": null, "stock": 5, "disponible": true },
+        { "idProductoVariante": 26, "color": "Negro", "codigoHex": "#1C1C1E", "talle": "XL", "precio": 89990.00, "precioPropioVariante": null, "stock": 5, "disponible": true }
+      ],
+      "referenciaVisual": {
+        "tipoPrenda": "Abrigo",
+        "coloresDisponibles": [
+          { "nombre": "Ciruela", "codigoHex": "#5C2D69" },
+          { "nombre": "Marfil", "codigoHex": "#F5EFE3" },
+          { "nombre": "Negro", "codigoHex": "#1C1C1E" }
+        ],
+        "detallesDeLaPrenda": "Botones forrados; corte redondo",
+        "material": "Lana",
+        "textura": null,
+        "tipoDeCorte": "Corte redondo",
+        "largo": null,
+        "mangas": null,
+        "cuello": null,
+        "otrosDetalles": "No se especifica largo, tipo de solapa ni forro. \"Corte redondo\" refiere a la silueta/corte de la prenda, no al color.",
+        "cantidadImagenesRecomendadas": 3
+      }
+    }
+  ],
+
+  "imagenesPendientes": [
+    {
+      "id": "img-p1-rosa",
+      "idProducto": 1,
+      "nombreProducto": "Vestido Rococó Midi",
+      "tipoPrenda": "Vestido",
+      "color": "Rosa",
+      "codigoHex": "#F3A6B6",
+      "tallesQueUsanEsteColor": ["S", "M"],
+      "idsVariantesDeEsteColor": [1, 2],
+      "descripcionDisponible": "Vestido midi con vuelo y cinturón, tejido liviano para primavera.",
+      "imagenActualDeReferencia": "/img/productos/p1-1.png",
+      "informacionVisualFaltante": ["textura", "tipoDeCorte", "mangas", "cuello"],
+      "suficienciaDescripcion": "parcial"
+    },
+    {
+      "id": "img-p1-ciruela",
+      "idProducto": 1,
+      "nombreProducto": "Vestido Rococó Midi",
+      "tipoPrenda": "Vestido",
+      "color": "Ciruela",
+      "codigoHex": "#5C2D69",
+      "tallesQueUsanEsteColor": ["L"],
+      "idsVariantesDeEsteColor": [3],
+      "descripcionDisponible": "Vestido midi con vuelo y cinturón, tejido liviano para primavera.",
+      "imagenActualDeReferencia": "/img/productos/p1-1.png",
+      "informacionVisualFaltante": ["textura", "tipoDeCorte", "mangas", "cuello"],
+      "suficienciaDescripcion": "parcial"
+    },
+    {
+      "id": "img-p2-negro",
+      "idProducto": 2,
+      "nombreProducto": "Vestido Satinado Noche",
+      "tipoPrenda": "Vestido",
+      "color": "Negro",
+      "codigoHex": "#1C1C1E",
+      "tallesQueUsanEsteColor": ["S", "M", "L"],
+      "idsVariantesDeEsteColor": [4, 5, 6],
+      "descripcionDisponible": "Vestido de satén con cuello barco, ideal para eventos.",
+      "imagenActualDeReferencia": "/img/productos/p2-1.png",
+      "informacionVisualFaltante": ["tipoDeCorte", "largo", "mangas"],
+      "suficienciaDescripcion": "parcial"
+    },
+    {
+      "id": "img-p3-marfil",
+      "idProducto": 3,
+      "nombreProducto": "Vestido Campo Cropped",
+      "tipoPrenda": "Vestido",
+      "color": "Marfil",
+      "codigoHex": "#F5EFE3",
+      "tallesQueUsanEsteColor": ["S", "M"],
+      "idsVariantesDeEsteColor": [7, 8],
+      "descripcionDisponible": "Vestido corto con encaje, cómodo y fresco.",
+      "imagenActualDeReferencia": "/img/productos/p3-1.png",
+      "informacionVisualFaltante": ["material", "tipoDeCorte", "mangas", "cuello"],
+      "suficienciaDescripcion": "parcial"
+    },
+    {
+      "id": "img-p4-marfil",
+      "idProducto": 4,
+      "nombreProducto": "Blusa Pompoir Marfil",
+      "tipoPrenda": "Blusa",
+      "color": "Marfil",
+      "codigoHex": "#F5EFE3",
+      "tallesQueUsanEsteColor": ["S", "M", "L"],
+      "idsVariantesDeEsteColor": [9, 10, 11],
+      "descripcionDisponible": "Blusa de pompoir con manga bombacha.",
+      "imagenActualDeReferencia": "/img/productos/p4-1.png",
+      "informacionVisualFaltante": ["material", "textura", "tipoDeCorte", "largo", "cuello"],
+      "suficienciaDescripcion": "insuficiente"
+    },
+    {
+      "id": "img-p5-ciruela",
+      "idProducto": 5,
+      "nombreProducto": "Remera Oversize Ciruela",
+      "tipoPrenda": "Remera",
+      "color": "Ciruela",
+      "codigoHex": "#5C2D69",
+      "tallesQueUsanEsteColor": ["M", "L", "XL"],
+      "idsVariantesDeEsteColor": [12, 13, 14],
+      "descripcionDisponible": "Remera oversize de algodón peinado.",
+      "imagenActualDeReferencia": "/img/productos/p5-1.png",
+      "informacionVisualFaltante": ["textura", "largo", "mangas", "cuello"],
+      "suficienciaDescripcion": "parcial"
+    },
+    {
+      "id": "img-p6-negro",
+      "idProducto": 6,
+      "nombreProducto": "Pantalón Wide Leg",
+      "tipoPrenda": "Pantalón",
+      "color": "Negro",
+      "codigoHex": "#1C1C1E",
+      "tallesQueUsanEsteColor": ["S", "M", "L"],
+      "idsVariantesDeEsteColor": [15, 16, 17],
+      "descripcionDisponible": "Pantalón de pierna anoda con cintura alta.",
+      "imagenActualDeReferencia": "/img/productos/p6-1.png",
+      "informacionVisualFaltante": ["material", "textura", "largo"],
+      "suficienciaDescripcion": "parcial"
+    },
+    {
+      "id": "img-p7-negro",
+      "idProducto": 7,
+      "nombreProducto": "Jeans Clásico Alto",
+      "tipoPrenda": "Jeans",
+      "color": "Negro",
+      "codigoHex": "#1C1C1E",
+      "tallesQueUsanEsteColor": ["M", "L", "XL"],
+      "idsVariantesDeEsteColor": [18, 19, 20],
+      "descripcionDisponible": "Jeans de tiro alto, corte recto, denim con stretch.",
+      "imagenActualDeReferencia": "/img/productos/p7-1.png",
+      "informacionVisualFaltante": ["textura", "largo"],
+      "suficienciaDescripcion": "parcial"
+    },
+    {
+      "id": "img-p8-marfil",
+      "idProducto": 8,
+      "nombreProducto": "Campera Acolchada Marfil",
+      "tipoPrenda": "Campera",
+      "color": "Marfil",
+      "codigoHex": "#F5EFE3",
+      "tallesQueUsanEsteColor": ["S", "M"],
+      "idsVariantesDeEsteColor": [21, 22],
+      "descripcionDisponible": "Campera acolchada liviana con capucha desmontable.",
+      "imagenActualDeReferencia": "/img/productos/p8-1.png",
+      "informacionVisualFaltante": ["material", "tipoDeCorte", "largo", "mangas", "cuello"],
+      "suficienciaDescripcion": "parcial"
+    },
+    {
+      "id": "img-p8-ciruela",
+      "idProducto": 8,
+      "nombreProducto": "Campera Acolchada Marfil",
+      "tipoPrenda": "Campera",
+      "color": "Ciruela",
+      "codigoHex": "#5C2D69",
+      "tallesQueUsanEsteColor": ["L"],
+      "idsVariantesDeEsteColor": [23],
+      "descripcionDisponible": "Campera acolchada liviana con capucha desmontable.",
+      "imagenActualDeReferencia": "/img/productos/p8-1.png",
+      "informacionVisualFaltante": ["material", "tipoDeCorte", "largo", "mangas", "cuello"],
+      "suficienciaDescripcion": "parcial",
+      "nota": "El nombre comercial incluye \"Marfil\" pero esta variante es Ciruela: la ficha y la imagen deben mostrar la prenda en ciruela (#5C2D69)."
+    },
+    {
+      "id": "img-p9-ciruela",
+      "idProducto": 9,
+      "nombreProducto": "Abrigo Corte Redondo",
+      "tipoPrenda": "Abrigo",
+      "color": "Ciruela",
+      "codigoHex": "#5C2D69",
+      "tallesQueUsanEsteColor": ["M"],
+      "idsVariantesDeEsteColor": [24],
+      "descripcionDisponible": "Abrigo de lana con corte redondo y botones forrados.",
+      "imagenActualDeReferencia": "/img/productos/p9-1.png",
+      "informacionVisualFaltante": ["textura", "largo", "mangas", "cuello"],
+      "suficienciaDescripcion": "parcial"
+    },
+    {
+      "id": "img-p9-marfil",
+      "idProducto": 9,
+      "nombreProducto": "Abrigo Corte Redondo",
+      "tipoPrenda": "Abrigo",
+      "color": "Marfil",
+      "codigoHex": "#F5EFE3",
+      "tallesQueUsanEsteColor": ["M"],
+      "idsVariantesDeEsteColor": [1002],
+      "descripcionDisponible": "Abrigo de lana con corte redondo y botones forrados.",
+      "imagenActualDeReferencia": "/img/productos/p9-1.png",
+      "informacionVisualFaltante": ["textura", "largo", "mangas", "cuello"],
+      "suficienciaDescripcion": "parcial"
+    },
+    {
+      "id": "img-p9-negro",
+      "idProducto": 9,
+      "nombreProducto": "Abrigo Corte Redondo",
+      "tipoPrenda": "Abrigo",
+      "color": "Negro",
+      "codigoHex": "#1C1C1E",
+      "tallesQueUsanEsteColor": ["L", "XL"],
+      "idsVariantesDeEsteColor": [25, 26],
+      "descripcionDisponible": "Abrigo de lana con corte redondo y botones forrados.",
+      "imagenActualDeReferencia": "/img/productos/p9-1.png",
+      "informacionVisualFaltante": ["textura", "largo", "mangas", "cuello"],
+      "suficienciaDescripcion": "parcial"
+    }
+  ],
+
+  "resumen": {
+    "totalProductos": 9,
+    "productosActivos": 9,
+    "productosInactivos": 0,
+    "totalVariantes": 27,
+    "variantesConStockCero": 0,
+    "totalCombinacionesProductoColor": 13,
+    "imagenesPrincipalesNecesariasUnaPorProductoColor": 13,
+    "coloresUnicosPorProducto": [
+      { "idProducto": 1, "nombre": "Vestido Rococó Midi", "colores": ["Rosa", "Ciruela"], "cantidad": 2 },
+      { "idProducto": 2, "nombre": "Vestido Satinado Noche", "colores": ["Negro"], "cantidad": 1 },
+      { "idProducto": 3, "nombre": "Vestido Campo Cropped", "colores": ["Marfil"], "cantidad": 1 },
+      { "idProducto": 4, "nombre": "Blusa Pompoir Marfil", "colores": ["Marfil"], "cantidad": 1 },
+      { "idProducto": 5, "nombre": "Remera Oversize Ciruela", "colores": ["Ciruela"], "cantidad": 1 },
+      { "idProducto": 6, "nombre": "Pantalón Wide Leg", "colores": ["Negro"], "cantidad": 1 },
+      { "idProducto": 7, "nombre": "Jeans Clásico Alto", "colores": ["Negro"], "cantidad": 1 },
+      { "idProducto": 8, "nombre": "Campera Acolchada Marfil", "colores": ["Marfil", "Ciruela"], "cantidad": 2 },
+      { "idProducto": 9, "nombre": "Abrigo Corte Redondo", "colores": ["Ciruela", "Marfil", "Negro"], "cantidad": 3 }
+    ],
+    "productosConDescripcionInsuficienteParaRecrearFielmente": [
+      { "idProducto": 4, "nombre": "Blusa Pompoir Marfil", "motivo": "La descripción no define material, textura, corte, largo ni cuello; \"pompoir\" no alcanza para determinar el diseño." }
+    ],
+    "productosConDescripcionParcial": [1, 2, 3, 5, 6, 7, 8, 9],
+    "productosConDescripcionSuficiente": [],
+    "criteriosSuficiencia": {
+      "suficiente": "Describe tipo de prenda, material o textura, corte y al menos dos atributos de construcción (largo, mangas, cuello, detalles).",
+      "parcial": "Describe tipo de prenda y al menos un atributo, pero faltan datos que cambian el resultado visual.",
+      "insuficiente": "Solo hay tipo de prenda y una mención genérica sin atributos visuales utilizables."
+    },
+    "coloresDelCatalogoDetectados": [
+      { "nombre": "Rosa", "codigoHex": "#F3A6B6", "productos": [1] },
+      { "nombre": "Negro", "codigoHex": "#1C1C1E", "productos": [2, 6, 7, 9] },
+      { "nombre": "Marfil", "codigoHex": "#F5EFE3", "productos": [3, 4, 8, 9] },
+      { "nombre": "Ciruela", "codigoHex": "#5C2D69", "productos": [1, 5, 8, 9] }
+    ],
+    "observacionesDeCalidadDeDatos": [
+      "Producto 9 (\"Abrigo Corte Redondo\") está asignado a la categoría \"Blusas\" en la base; se exportó sin corregir.",
+      "Producto 6 tiene un error de tipeo en la descripción: \"pierna anoda\" (por \"ancha\").",
+      "Todos los precios de variante son NULL: el precio efectivo proviene de Producto.PrecioBase.",
+      "Ninguna variante tiene stock cero en este momento; se incluyen todas las variantes igualmente.",
+      "Las imágenes actuales (/img/productos/pN-M.png) son placeholders genéricos generados por script, no fotografías por color."
+    ]
+  }
+}

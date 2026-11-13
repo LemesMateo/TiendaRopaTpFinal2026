@@ -1,5 +1,6 @@
 @page "/admin/pedidos"
 @using TiendaRopa.Contracts.Admin
+@using TiendaRopa.Contracts.Pedidos
 @using TiendaRopa.Shared.Services
 @inject IAdminService AdminApi
 @inject SesionService Sesion
@@ -124,6 +125,85 @@ else
                             <span>Total</span>
                             <span>@Services.CatalogoPresentation.FormatearPrecio(detalle.Total)</span>
                         </p>
+
+                        @* Historial de actualizaciones públicas del pedido.
+                           Es lo que ve el cliente en "Mis pedidos" y lo que el
+                           chatbot usa para responder consultas de envío. *@
+                        <section class="admin-notas" aria-label="Actualizaciones del pedido">
+                            <h3 class="admin-notas__title">
+                                <AppIcon Icon="campaign" Size="18" />
+                                Actualizaciones públicas
+                            </h3>
+
+                            @if (notasCargando)
+                            {
+                                <LoadingState Text="Cargando actualizaciones..." />
+                            }
+                            else if (notas.Count == 0)
+                            {
+                                <p class="admin-notas__empty">
+                                    Todavía no hay actualizaciones para este pedido.
+                                </p>
+                            }
+                            else
+                            {
+                                <ul class="admin-notas__lista">
+                                    @foreach (var nota in notas)
+                                    {
+                                        <li class="admin-notas__item">
+                                            <p class="admin-notas__texto">@nota.Nota</p>
+                                            <p class="admin-notas__meta">
+                                                @nota.FechaActualizacion.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                                @if (!string.IsNullOrWhiteSpace(nota.Empresa))
+                                                {
+                                                    <span> · @nota.Empresa</span>
+                                                }
+                                                @if (!string.IsNullOrWhiteSpace(nota.CodigoSeguimiento))
+                                                {
+                                                    <span> · seguimiento @nota.CodigoSeguimiento</span>
+                                                }
+                                            </p>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+
+                            <div class="admin-notas__form">
+                                <label class="admin-notas__label" for="nota-@pedido.Id">
+                                    Nueva actualización para el cliente
+                                </label>
+                                <textarea id="nota-@pedido.Id"
+                                          class="admin-notas__textarea"
+                                          @bind="notaTexto"
+                                          @bind:event="oninput"
+                                          rows="2"
+                                          maxlength="500"
+                                          placeholder="Ej: Tu pedido salió a reparto. Seguimiento: VR123456"></textarea>
+                                <div class="admin-notas__campos">
+                                    <input type="text"
+                                           class="admin-notas__input"
+                                           @bind="notaEmpresa"
+                                           @bind:event="oninput"
+                                           maxlength="100"
+                                           placeholder="Empresa (opcional)"
+                                           aria-label="Empresa de transporte" />
+                                    <input type="text"
+                                           class="admin-notas__input"
+                                           @bind="notaSeguimiento"
+                                           @bind:event="oninput"
+                                           maxlength="60"
+                                           placeholder="Código de seguimiento (opcional)"
+                                           aria-label="Código de seguimiento" />
+                                </div>
+                                <AppButton Variant="primary"
+                                           Size="sm"
+                                           Icon="add_comment"
+                                           Disabled="@(string.IsNullOrWhiteSpace(notaTexto) || guardandoNota)"
+                                           OnClick="(() => GuardarNotaAsync(pedido.Id))">
+                                    @(guardandoNota ? "Guardando…" : "Publicar actualización")
+                                </AppButton>
+                            </div>
+                        </section>
                     }
                     else
                     {
@@ -148,6 +228,14 @@ else
     private List<PedidoAdminDto> pedidos = [];
     private readonly Dictionary<int, string> estadoSeleccionado = [];
     private int? cambiandoId;
+
+    // ---- Notas públicas del pedido ----
+    private List<PedidoNotaDto> notas = [];
+    private bool notasCargando;
+    private bool guardandoNota;
+    private string notaTexto = string.Empty;
+    private string notaEmpresa = string.Empty;
+    private string notaSeguimiento = string.Empty;
     private int? detalleId;
     private TiendaRopa.Contracts.Pedidos.PedidoDto? detalle;
 
@@ -209,10 +297,67 @@ else
         {
             detalle = await AdminApi.GetPedidoAsync(id);
             detalleId = detalle is null ? null : id;
+
+            // Las actualizaciones del pedido se cargan con el detalle.
+            notasCargando = true;
+            StateHasChanged();
+            notas = (await AdminApi.GetNotasPedidoAsync(id)).ToList();
         }
         catch (Exception)
         {
             detalleId = null;
+            notas = [];
+        }
+        finally
+        {
+            notasCargando = false;
+        }
+    }
+
+    /// <summary>Publica una actualización visible para el cliente.</summary>
+    private async Task GuardarNotaAsync(int idPedido)
+    {
+        if (string.IsNullOrWhiteSpace(notaTexto) || guardandoNota)
+        {
+            return;
+        }
+
+        guardandoNota = true;
+        StateHasChanged();
+
+        try
+        {
+            var creada = await AdminApi.CrearNotaPedidoAsync(idPedido, new CrearNotaPedidoRequest
+            {
+                Nota = notaTexto,
+                Empresa = string.IsNullOrWhiteSpace(notaEmpresa) ? null : notaEmpresa,
+                CodigoSeguimiento = string.IsNullOrWhiteSpace(notaSeguimiento) ? null : notaSeguimiento,
+            });
+
+            if (creada is null)
+            {
+                mensaje = AdminApi.UltimoError ?? "No pudimos publicar la actualización.";
+                esError = true;
+            }
+            else
+            {
+                notas.Insert(0, creada);
+                notaTexto = string.Empty;
+                notaEmpresa = string.Empty;
+                notaSeguimiento = string.Empty;
+                mensaje = $"Actualización publicada en el pedido #{idPedido}.";
+                esError = false;
+            }
+        }
+        catch (Exception)
+        {
+            mensaje = "No pudimos conectar con la tienda.";
+            esError = true;
+        }
+        finally
+        {
+            guardandoNota = false;
+            StateHasChanged();
         }
     }
 

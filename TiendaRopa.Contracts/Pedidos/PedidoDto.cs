@@ -18,4 +18,7 @@ public sealed class PedidoDto
     public bool PermiteCancelacion { get; init; }
 
     public IReadOnlyList<PedidoDetalleDto> Detalles { get; init; } = [];
+
+    /// <summary>Historial de actualizaciones públicas del pedido (la más reciente primero).</summary>
+    public IReadOnlyList<PedidoNotaDto> Notas { get; init; } = [];
 }

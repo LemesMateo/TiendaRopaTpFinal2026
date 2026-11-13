@@ -83,6 +83,174 @@ async function shot(page, name) {
   await page.screenshot({ path: `${OUT}/${name}.png`, fullPage: true });
 }
 
+// ---------------------------------------------------------------------------
+// Formulario de imágenes (límite de 5) — se ejecuta una sola vez, no por
+// viewport, y usa un producto de PRUEBA creado por API para no tocar el catálogo
+// real. Verifica los escenarios del reporte:
+//   1) agregar hasta llegar a 5
+//   2) contador coherente con la API
+//   3) quitar 2 y agregar 2 en el MISMO guardado (antes fallaba con
+//      "El producto ya tiene el máximo de 5 imágenes")
+//   4) el aviso de error aparece DENTRO del formulario, junto a Guardar/Cancelar
+// ---------------------------------------------------------------------------
+async function pruebasImagenesAdmin(browser) {
+  console.log('\n=== FORMULARIO DE IMÁGENES (límite de 5) ===');
+
+  const API = 'http://localhost:5100';
+  const login = await fetch(`${API}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: 'admin@velvetrose.dev', password: 'Velvet123!' }),
+  });
+  if (!login.ok) return report('Imágenes: login admin para la prueba', false, 'sin sesión API');
+  const { token } = await login.json();
+  const auth = { authorization: `Bearer ${token}`, 'content-type': 'application/json' };
+
+  // Producto de prueba sin imágenes.
+  const creado = await fetch(`${API}/api/admin/productos`, {
+    method: 'POST',
+    headers: auth,
+    body: JSON.stringify({
+      id: 0,
+      nombre: `Producto Imágenes ${marca}`,
+      idCategoria: 1,
+      descripcion: 'Prueba automatizada del límite de 5 imágenes.',
+      precioBase: 1000,
+      activo: true,
+    }),
+  });
+  if (!creado.ok) return report('Imágenes: crear producto de prueba', false, `status=${creado.status}`);
+  const producto = await creado.json();
+  const idProducto = producto.id;
+
+  const leerImagenes = async () => {
+    const r = await fetch(`${API}/api/admin/productos/${idProducto}`, { headers: auth });
+    return (await r.json()).imagenes ?? [];
+  };
+
+  // PNG mínimo válido (firma + IHDR parcial) para las subidas de prueba.
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==',
+    'base64');
+  const archivos = [1, 2, 3, 4, 5].map((n) => ({ name: `prueba-${n}.png`, mimeType: 'image/png', buffer: png }));
+
+  let contexto;
+  try {
+    contexto = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const admin = await contexto.newPage();
+    const errores = [];
+    admin.on('console', (m) => { if (m.type() === 'error') errores.push(m.text()); });
+
+    await gotoApp(admin, `${BASE}/login`);
+    await admin.fill('input[autocomplete="email"]', 'admin@velvetrose.dev');
+    await admin.fill('input[autocomplete="current-password"]', 'Velvet123!');
+    await admin.click('button[type="submit"]');
+    await admin.waitForTimeout(1500);
+
+    await gotoApp(admin, `${BASE}/admin/productos`);
+    await admin.waitForSelector('.admin-list__item', { timeout: 15000 });
+    await admin.locator('.admin-list__item', { hasText: `Producto Imágenes ${marca}` })
+      .locator('text=Editar').first().click();
+    await admin.waitForSelector('.admin-form', { timeout: 15000 });
+
+    const contador = () => admin.locator('.vr-imagenes__count').innerText();
+
+    // 1) Agregar 5 imágenes.
+    await admin.locator('.vr-imagenes__file').setInputFiles(archivos);
+    await admin.waitForTimeout(2000);
+    report('Imágenes: agregar 5 en el formulario', (await contador()).trim() === '5 de 5',
+      `contador=${(await contador()).trim()}`);
+
+    // 2) Guardar y comprobar que la API quedó con 5 (fuente autoritativa).
+    await admin.locator('.admin-form__actions button', { hasText: 'Guardar' }).first().click();
+    await admin.waitForTimeout(4000);
+    let enApi = await leerImagenes();
+    report('Imágenes: 5 persistidas en la API', enApi.length === 5, `api=${enApi.length}`);
+
+    // 3) El input de subida desaparece al llegar al máximo.
+    report('Imágenes: alta oculta al llegar a 5',
+      (await admin.locator('.vr-imagenes__file').count()) === 0
+      && (await admin.locator('.vr-imagenes__max').count()) === 1);
+
+    // 4) Quitar 2 y agregar 2 en el mismo guardado (el caso que fallaba).
+    await admin.locator('button[aria-label="Quitar la imagen 5"]').click();
+    await admin.waitForTimeout(400);
+    await admin.locator('button[aria-label="Quitar la imagen 4"]').click();
+    await admin.waitForTimeout(600);
+    report('Imágenes: quitar 2 libera lugares', (await contador()).trim() === '3 de 5',
+      `contador=${(await contador()).trim()}`);
+
+    await admin.locator('.vr-imagenes__file').setInputFiles([archivos[0], archivos[1]]);
+    await admin.waitForTimeout(2000);
+    report('Imágenes: agregar 2 de vuelta', (await contador()).trim() === '5 de 5',
+      `contador=${(await contador()).trim()}`);
+
+    await admin.locator('.admin-form__actions button', { hasText: 'Guardar' }).first().click();
+    await admin.waitForTimeout(4500);
+    enApi = await leerImagenes();
+    const avisoForm = await admin.locator('.admin-notice--form').count();
+    report('Imágenes: reemplazo 5→3→5 se guarda sin error de máximo',
+      enApi.length === 5 && avisoForm === 0, `api=${enApi.length} avisos=${avisoForm}`);
+    report('Imágenes: contador del formulario coincide con la API',
+      (await contador()).trim() === `${enApi.length} de ${5}`,
+      `ui=${(await contador()).trim()} api=${enApi.length}`);
+
+    // 5) El aviso de error se muestra DENTRO del formulario, encima de Guardar.
+    await admin.locator('.admin-field--wide input[type="text"]').first().fill('');
+    await admin.locator('.admin-form__actions button', { hasText: 'Guardar' }).first().click();
+    await admin.waitForTimeout(1200);
+
+    const ubicacion = await admin.evaluate(() => {
+      const aviso = document.querySelector('.admin-notice--form');
+      const acciones = document.querySelector('.admin-form__actions');
+      if (!aviso || !acciones) return null;
+      const a = aviso.getBoundingClientRect();
+      const b = acciones.getBoundingClientRect();
+      return {
+        texto: aviso.textContent.trim(),
+        // El aviso está antes de los botones y dentro de la tarjeta del form.
+        antesDeBotones: a.bottom <= b.top + 2,
+        dentroDelForm: !!aviso.closest('.admin-form'),
+        role: aviso.getAttribute('role'),
+        foco: document.activeElement === aviso,
+        fueraDeVista: a.top >= 0 && a.bottom <= window.innerHeight,
+      };
+    });
+
+    report('Imágenes: aviso de validación dentro del formulario', ubicacion?.dentroDelForm === true,
+      ubicacion?.texto?.slice(0, 60) ?? 'sin aviso');
+    report('Imágenes: aviso encima de Guardar/Cancelar', ubicacion?.antesDeBotones === true);
+    report('Imágenes: aviso accesible (role=alert + foco)',
+      ubicacion?.role === 'alert' && ubicacion?.foco === true,
+      `role=${ubicacion?.role} foco=${ubicacion?.foco}`);
+    report('Imágenes: aviso visible sin desplazarse', ubicacion?.fueraDeVista === true);
+
+    // 6) El aviso desaparece al corregir el dato (no queda bloqueado).
+    await admin.locator('.admin-field--wide input[type="text"]').first()
+      .fill(`Producto Imágenes ${marca}`);
+    await admin.locator('.admin-form__actions button', { hasText: 'Guardar' }).first().click();
+    await admin.waitForTimeout(3500);
+    report('Imágenes: aviso desaparece tras corregir',
+      (await admin.locator('.admin-notice--form').count()) === 0);
+
+    report('Imágenes: sin errores de consola en el formulario',
+      errores.filter((t) => !t.includes('status of 404')).length === 0,
+      errores.filter((t) => !t.includes('status of 404')).slice(0, 2).join(' | ').slice(0, 100));
+
+    await shot(admin, 'imagenes-admin-formulario');
+  } finally {
+    if (contexto) await contexto.close();
+
+    // Limpieza: se borran las imágenes y se desactiva el producto de prueba.
+    await fetch(`${API}/api/admin/productos/${idProducto}/imagenes`, {
+      method: 'PUT', headers: auth, body: JSON.stringify([]),
+    }).catch(() => {});
+    await fetch(`${API}/api/admin/productos/${idProducto}`, {
+      method: 'DELETE', headers: { authorization: `Bearer ${token}` },
+    }).catch(() => {});
+  }
+}
+
 async function run() {
   await reponerStock();
   const browser = await chromium.launch({ headless: true });
@@ -357,6 +525,9 @@ async function run() {
 
     await context.close();
   }
+
+  // El formulario de imágenes se prueba una sola vez (no depende del viewport).
+  await pruebasImagenesAdmin(browser);
 
   await browser.close();
 

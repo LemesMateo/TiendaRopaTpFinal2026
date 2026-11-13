@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using TiendaRopa.Contracts.Admin;
 using TiendaRopa.Contracts.Catalogo;
@@ -271,6 +272,42 @@ public sealed class HttpAdminService(HttpClient http, SesionService sesion, Asse
         return await respuesta.Content.ReadFromJsonAsync<PedidoDto>(Json, ct);
     }
 
+    // ---------------- Notas públicas del pedido ----------------
+
+    public async Task<IReadOnlyList<PedidoNotaDto>> GetNotasPedidoAsync(
+        int idPedido, CancellationToken ct = default)
+    {
+        using var request = ApiHttp.Preparar(
+            HttpMethod.Get, $"api/admin/pedidos/{idPedido}/notas", sesion);
+        using var respuesta = await http.SendAsync(request, ct);
+
+        if (!respuesta.IsSuccessStatusCode)
+        {
+            UltimoError = await ApiHttp.LeerErrorAsync(respuesta);
+            return [];
+        }
+
+        UltimoError = null;
+        return await respuesta.Content.ReadFromJsonAsync<List<PedidoNotaDto>>(Json, ct) ?? [];
+    }
+
+    public async Task<PedidoNotaDto?> CrearNotaPedidoAsync(
+        int idPedido, CrearNotaPedidoRequest request, CancellationToken ct = default)
+    {
+        using var requestHttp = ApiHttp.Preparar(
+            HttpMethod.Post, $"api/admin/pedidos/{idPedido}/notas", sesion, request);
+        using var respuesta = await http.SendAsync(requestHttp, ct);
+
+        if (!respuesta.IsSuccessStatusCode)
+        {
+            UltimoError = await ApiHttp.LeerErrorAsync(respuesta);
+            return null;
+        }
+
+        UltimoError = null;
+        return await respuesta.Content.ReadFromJsonAsync<PedidoNotaDto>(Json, ct);
+    }
+
     // ---------------- Imágenes ----------------
 
     /// <summary>
@@ -319,5 +356,52 @@ public sealed class HttpAdminService(HttpClient http, SesionService sesion, Asse
         }
 
         return respuesta.IsSuccessStatusCode;
+    }
+
+    /// <summary>
+    /// Reemplaza la lista completa de imágenes vigentes en una sola operación:
+    /// envía en multipart la lista final (orden + principal) y los archivos
+    /// nuevos. El servidor aplica bajas, altas y orden de forma atómica y
+    /// valida el límite sobre la lista final, así que reemplazar imágenes no
+    /// consume plazas de las que se están eliminando.
+    /// </summary>
+    public async Task<IReadOnlyList<ProductoImagenDto>?> ReemplazarImagenesAsync(
+        int productoId,
+        IReadOnlyList<ImagenFinalDto> imagenes,
+        IReadOnlyList<ImagenNuevaDto> nuevas,
+        CancellationToken ct = default)
+    {
+        using var request = ApiHttp.Preparar(
+            HttpMethod.Put, $"api/admin/productos/{productoId}/imagenes/lote", sesion);
+
+        using var multipart = new MultipartFormDataContent
+        {
+            // La lista va como JSON: el orden del array es el orden definitivo.
+            { new StringContent(JsonSerializer.Serialize(imagenes, Json), Encoding.UTF8, "application/json"), "imagenes" },
+        };
+
+        // Cada archivo se numera (archivo0, archivo1, …) y la lista lo referencia
+        // por indiceNueva; así no depende de caracteres especiales del nombre.
+        for (var i = 0; i < nuevas.Count; i++)
+        {
+            var archivo = new ByteArrayContent(nuevas[i].Contenido);
+            archivo.Headers.ContentType = new MediaTypeHeaderValue(nuevas[i].ContentType);
+            multipart.Add(archivo, $"archivo{i}", nuevas[i].NombreArchivo);
+        }
+
+        request.Content = multipart;
+
+        using var respuesta = await http.SendAsync(request, ct);
+
+        if (!respuesta.IsSuccessStatusCode)
+        {
+            UltimoError = await ApiHttp.LeerErrorAsync(respuesta);
+            return null;
+        }
+
+        UltimoError = null;
+        var valor = await respuesta.Content.ReadFromJsonAsync<List<ProductoImagenDto>>(Json, ct);
+
+        return valor ?? [];
     }
 }

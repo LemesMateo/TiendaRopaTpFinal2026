@@ -1,0 +1,193 @@
+@page "/mis-solicitudes"
+@using TiendaRopa.Contracts.Asistente
+@using TiendaRopa.Contracts.Solicitudes
+@using TiendaRopa.Shared.Services
+@inject ISolicitudService SolicitudesApi
+@inject SesionService Sesion
+@implements IDisposable
+
+<PageTitle>Mis solicitudes — Velvet Rose Boutique</PageTitle>
+
+@* Solicitudes del cliente: estado y respuesta de la tienda. *@
+
+@if (!sesionCargada)
+{
+    <LoadingState Text="Verificando tu sesión..." />
+}
+else if (!Sesion.Iniciada)
+{
+    <EmptyState Icon="lock"
+                 Title="Iniciá sesión para ver tus solicitudes"
+                 Description="Acá vas a ver el estado de tus consultas y las respuestas de la tienda.">
+        <AppButton Variant="primary" Icon="login" Href="/login?redirect=/mis-solicitudes">
+            Iniciar sesión
+        </AppButton>
+    </EmptyState>
+}
+else
+{
+    <header class="page-head">
+        <h1>Mis solicitudes</h1>
+        <p class="page-sub">Consultas, mensajes y pedidos de reposición que dejaste en el chat.</p>
+    </header>
+
+    @if (cargando)
+    {
+        <LoadingState Text="Cargando tus solicitudes..." />
+    }
+    else if (error is not null)
+    {
+        <EmptyState Icon="cloud_off"
+                    Title="No pudimos cargar tus solicitudes"
+                    Description="@error">
+            <AppButton Variant="outline" Icon="refresh" OnClick="CargarAsync">
+                Reintentar
+            </AppButton>
+        </EmptyState>
+    }
+    else if (solicitudes.Count == 0)
+    {
+        <EmptyState Icon="forum"
+                    Title="Todavía no tenés solicitudes"
+                    Description="Si necesitás una consulta o avisar que falta stock, pedilo desde el chat.">
+            <AppButton Variant="primary" Icon="chat" OnClick="AbrirChat">
+                Ir al chat
+            </AppButton>
+        </EmptyState>
+    }
+    else
+    {
+        <ul class="ms-list">
+            @foreach (var solicitud in solicitudes)
+            {
+                <li class="ms-item">
+                    <div class="ms-item__head">
+                        <span class="ms-item__badges">
+                            <StatusBadge Text="@TipoTexto(solicitud.Tipo)" Tone="@TipoTone(solicitud.Tipo)" />
+                            <StatusBadge Text="@solicitud.Estado" Tone="@EstadoTone(solicitud.Estado)" />
+                        </span>
+                        <span class="ms-item__fecha">
+                            @solicitud.FechaCreacion.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                        </span>
+                    </div>
+
+                    <p class="ms-item__texto">@solicitud.Mensaje</p>
+
+                    @if (!string.IsNullOrWhiteSpace(solicitud.ProductoNombre))
+                    {
+                        <p class="ms-item__meta">
+                            @solicitud.ProductoNombre
+                            @if (!string.IsNullOrWhiteSpace(solicitud.Talle))
+                            {
+                                <span> · talle @solicitud.Talle</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(solicitud.Color))
+                            {
+                                <span> · color @solicitud.Color</span>
+                            }
+                        </p>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(solicitud.Respuesta))
+                    {
+                        <div class="ms-item__respuesta">
+                            <strong>
+                                <AppIcon Icon="reply" Size="16" />
+                                Respuesta de la tienda
+                            </strong>
+                            <p>@solicitud.Respuesta</p>
+                            @if (solicitud.FechaResolucion is { } fecha)
+                            {
+                                <small>@fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="ms-item__espera">
+                            <AppIcon Icon="hourglass_empty" Size="16" />
+                            Estamos revisando tu solicitud. Te avisamos por el teléfono de contacto.
+                        </p>
+                    }
+                </li>
+            }
+        </ul>
+    }
+}
+
+@code {
+    private bool sesionCargada;
+    private bool cargando = true;
+    private string? error;
+    private List<SolicitudAtencionDto> solicitudes = [];
+
+    [Inject]
+    private NavigationManager Navigation { get; set; } = default!;
+
+    protected override void OnInitialized() => Sesion.Cambio += OnSesionCambiada;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!sesionCargada)
+        {
+            await Sesion.CargarAsync();
+            sesionCargada = true;
+            StateHasChanged();
+
+            if (Sesion.Iniciada)
+            {
+                await CargarAsync();
+            }
+        }
+    }
+
+    private void OnSesionCambiada() => InvokeAsync(StateHasChanged);
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+        StateHasChanged();
+
+        try
+        {
+            solicitudes = (await SolicitudesApi.GetMisSolicitudesAsync()).ToList();
+        }
+        catch (Exception)
+        {
+            error = "No pudimos conectar con la tienda.";
+        }
+        finally
+        {
+            cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private void AbrirChat() => Navigation.NavigateTo("/");
+
+    private static string TipoTexto(string tipo) => tipo switch
+    {
+        SolicitudTipos.ConsultaPedido => "Consulta de pedido",
+        SolicitudTipos.SolicitudReposicion => "Reposición",
+        _ => "Consulta",
+    };
+
+    private static string TipoTone(string tipo) => tipo switch
+    {
+        SolicitudTipos.ConsultaPedido => "info",
+        SolicitudTipos.SolicitudReposicion => "warning",
+        _ => "neutral",
+    };
+
+    private static string EstadoTone(string estado) => estado switch
+    {
+        SolicitudEstados.Abierta => "primary",
+        SolicitudEstados.EnRevision => "info",
+        SolicitudEstados.Respondida => "success",
+        SolicitudEstados.Cerrada => "neutral",
+        _ => "neutral",
+    };
+
+    public void Dispose() => Sesion.Cambio -= OnSesionCambiada;
+}

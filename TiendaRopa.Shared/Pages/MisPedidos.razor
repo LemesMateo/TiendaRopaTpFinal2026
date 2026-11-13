@@ -120,6 +120,30 @@ else
                     }
                 </div>
 
+                @* Actualizaciones públicas del pedido (las publica el administrador). *@
+                @if (pedido.Notas.Count > 0)
+                {
+                    <ul class="mp-notas" aria-label="@($"Actualizaciones del pedido {pedido.Id}")">
+                        @foreach (var nota in pedido.Notas)
+                        {
+                            <li class="mp-notas__item">
+                                <p class="mp-notas__texto">@nota.Nota</p>
+                                <p class="mp-notas__meta">
+                                    @nota.FechaActualizacion.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                    @if (!string.IsNullOrWhiteSpace(nota.Empresa))
+                                    {
+                                        <span> · @nota.Empresa</span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(nota.CodigoSeguimiento))
+                                    {
+                                        <span> · seguimiento @nota.CodigoSeguimiento</span>
+                                    }
+                                </p>
+                            </li>
+                        }
+                    </ul>
+                }
+
                 @if (confirmarId == pedido.Id)
                 {
                     <div class="mp-card__confirm" role="alertdialog"

@@ -129,9 +129,32 @@
     [Parameter]
     public EventCallback<IReadOnlyList<ImagenProducto>> ImagenesChanged { get; set; }
 
+    /// <summary>
+    /// Aviso de la sección (error o confirmación) para que el padre lo muestre
+    /// también junto a Guardar/Cancelar: el formulario es largo y el usuario
+    /// suele estar al final cuando intenta guardar.
+    /// </summary>
+    [Parameter]
+    public EventCallback<(string? Texto, bool EsError)> AvisoCambiado { get; set; }
+
     private bool cargando;
     private string? mensaje;
     private bool esError;
+
+    /// <summary>
+    /// Publica el aviso en la propia sección y, si el padre lo escucha, también
+    /// junto a Guardar/Cancelar.
+    /// </summary>
+    private async Task AvisarAsync(string? texto, bool error)
+    {
+        mensaje = texto;
+        esError = error;
+
+        if (AvisoCambiado.HasDelegate)
+        {
+            await AvisoCambiado.InvokeAsync((texto, error));
+        }
+    }
 
     /// <summary>URLs ya resueltas por la plataforma (para no repetirlas).</summary>
     private readonly Dictionary<string, string> _urlsResueltas = new(StringComparer.Ordinal);
@@ -155,7 +178,7 @@
 
     private async Task OnArchivosSeleccionadosAsync(InputFileChangeEventArgs args)
     {
-        mensaje = null;
+        await AvisarAsync(null, error: false);
         cargando = true;
         StateHasChanged();
 
@@ -168,8 +191,7 @@
                 var error = await LeerArchivoWebAsync(archivo, seleccionadas);
                 if (error is not null)
                 {
-                    mensaje = error;
-                    esError = true;
+                    await AvisarAsync(error, error: true);
                     break;
                 }
             }
@@ -178,13 +200,11 @@
         }
         catch (InvalidOperationException)
         {
-            mensaje = "Seleccioná menos archivos a la vez.";
-            esError = true;
+            await AvisarAsync("Seleccioná menos archivos a la vez.", error: true);
         }
         catch (IOException)
         {
-            mensaje = "No se pudo leer el archivo seleccionado.";
-            esError = true;
+            await AvisarAsync("No se pudo leer el archivo seleccionado.", error: true);
         }
         finally
         {
@@ -228,7 +248,7 @@
 
     private async Task SeleccionarNativoAsync()
     {
-        mensaje = null;
+        await AvisarAsync(null, error: false);
         cargando = true;
         StateHasChanged();
 
@@ -238,8 +258,7 @@
 
             if (resultado.Error is not null)
             {
-                mensaje = resultado.Error;
-                esError = true;
+                await AvisarAsync(resultado.Error, error: true);
             }
 
             if (resultado.Imagenes.Count == 0)
@@ -252,8 +271,7 @@
         }
         catch (Exception)
         {
-            mensaje = "No se pudo abrir el selector de imágenes.";
-            esError = true;
+            await AvisarAsync("No se pudo abrir el selector de imágenes.", error: true);
         }
         finally
         {
@@ -269,11 +287,15 @@
             return;
         }
 
+        // El espacio se calcula sobre la lista vigente del formulario: las
+        // imágenes quitadas ya no ocupan lugar, aunque sigan en la base hasta
+        // que se guarde el producto.
         var espacio = ProductoImagenes.MaximoPorProducto - Imagenes.Count;
         if (espacio <= 0)
         {
-            mensaje = $"Un producto admite hasta {ProductoImagenes.MaximoPorProducto} imágenes.";
-            esError = true;
+            await AvisarAsync(
+                $"Un producto admite hasta {ProductoImagenes.MaximoPorProducto} imágenes.",
+                error: true);
             return;
         }
 
@@ -299,8 +321,10 @@
 
         if (descartadas > 0)
         {
-            mensaje = $"Se agregaron {aAgregar.Count} imágenes; {descartadas} quedaron afuera por el límite de {ProductoImagenes.MaximoPorProducto}.";
-            esError = true;
+            await AvisarAsync(
+                $"Se agregaron {aAgregar.Count} imágenes; {descartadas} quedaron afuera " +
+                $"por el límite de {ProductoImagenes.MaximoPorProducto}.",
+                error: true);
         }
     }
 
@@ -358,6 +382,8 @@
             };
         }
 
+        // Quitar una imagen libera un lugar: el aviso de límite ya no aplica.
+        await AvisarAsync(null, error: false);
         await ImagenesChanged.InvokeAsync(nuevaLista);
     }
 }

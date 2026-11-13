@@ -1,0 +1,375 @@
+/* ============================================================
+   Solicitudes de atención — panel de la tienda y vista del cliente.
+   Tokens Velvet Rose: marfil de fondo, frambuesa en CTA, ciruela en detalles.
+   ============================================================ */
+
+/* ---------- Campana de notificaciones ---------- */
+.sol-bell {
+    position: relative;
+}
+
+.sol-bell__btn {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: var(--vr-tap-min);
+    height: var(--vr-tap-min);
+    border: 1px solid var(--vr-border-strong);
+    border-radius: 50%;
+    background-color: var(--vr-surface);
+    color: var(--vr-plum-strong);
+    cursor: pointer;
+    transition: background-color var(--vr-dur-fast) var(--vr-ease),
+                border-color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.sol-bell__btn:hover {
+    background-color: var(--vr-primary-soft);
+    border-color: var(--vr-primary);
+    color: var(--vr-primary);
+}
+
+.sol-bell__badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--vr-radius-pill);
+    background-color: var(--vr-primary);
+    color: var(--vr-primary-contrast);
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.sol-bell__panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + var(--vr-space-2));
+    z-index: 40;
+    width: min(320px, calc(100vw - var(--vr-space-8)));
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: var(--vr-space-3);
+    border: 1px solid var(--vr-border);
+    border-radius: var(--vr-radius-md);
+    background-color: var(--vr-surface);
+    box-shadow: var(--vr-shadow-lg);
+}
+
+.sol-bell__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--vr-space-2);
+    padding-bottom: var(--vr-space-2);
+    margin-bottom: var(--vr-space-2);
+    border-bottom: 1px solid var(--vr-border);
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-plum-strong);
+}
+
+.sol-bell__leer-todas {
+    border: 0;
+    background: transparent;
+    color: var(--vr-primary);
+    font: inherit;
+    font-size: var(--vr-fs-xs);
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.sol-bell__empty {
+    margin: 0;
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text-muted);
+}
+
+.sol-bell__lista {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--vr-space-1);
+}
+
+.sol-bell__item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    padding: var(--vr-space-2);
+    border: 0;
+    border-radius: var(--vr-radius-sm);
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.sol-bell__item:hover {
+    background-color: var(--vr-primary-soft);
+}
+
+.sol-bell__item.is-pendiente {
+    background-color: var(--vr-surface-tint);
+}
+
+.sol-bell__item-texto {
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-text);
+}
+
+.sol-bell__item-meta {
+    font-size: var(--vr-fs-xs);
+    color: var(--vr-text-muted);
+}
+
+/* ---------- Listado de solicitudes (panel) ---------- */
+.sol-list {
+    display: grid;
+    gap: var(--vr-space-3);
+}
+
+.sol-item {
+    border: 1px solid var(--vr-border);
+    border-radius: var(--vr-radius-md);
+    background-color: var(--vr-surface);
+    box-shadow: var(--vr-shadow-sm);
+    overflow: hidden;
+}
+
+.sol-item.is-abierto {
+    border-color: var(--vr-primary);
+}
+
+.sol-item__head {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: var(--vr-space-2);
+    width: 100%;
+    padding: var(--vr-space-3);
+    border: 0;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.sol-item__head:hover {
+    background-color: var(--vr-surface-soft);
+}
+
+.sol-item__badges {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--vr-space-2);
+}
+
+.sol-item__titulo {
+    font-family: var(--vr-font-display);
+    font-size: var(--vr-fs-md);
+    font-weight: 700;
+    color: var(--vr-plum-strong);
+}
+
+.sol-item__meta {
+    grid-column: 1 / -1;
+    font-size: var(--vr-fs-xs);
+    color: var(--vr-text-muted);
+}
+
+.sol-detail {
+    display: grid;
+    gap: var(--vr-space-3);
+    padding: var(--vr-space-3);
+    border-top: 1px solid var(--vr-border);
+    background-color: var(--vr-surface-soft);
+}
+
+.sol-detail__texto {
+    margin: 0;
+    font-size: var(--vr-fs-sm);
+    line-height: var(--vr-lh-body);
+    white-space: pre-wrap;
+}
+
+.sol-detail__datos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--vr-space-2);
+    margin: 0;
+}
+
+.sol-detail__datos div {
+    padding: var(--vr-space-2);
+    border-radius: var(--vr-radius-sm);
+    background-color: var(--vr-surface);
+    border: 1px solid var(--vr-border);
+}
+
+.sol-detail__datos dt {
+    font-size: var(--vr-fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--vr-text-muted);
+}
+
+.sol-detail__datos dd {
+    margin: 2px 0 0;
+    font-size: var(--vr-fs-sm);
+    color: var(--vr-plum-strong);
+    overflow-wrap: anywhere;
+}
+
+.sol-detail__respuesta {
+    padding: var(--vr-space-3);
+    border-radius: var(--vr-radius-sm);
+    background-color: var(--vr-lavender);
+    color: var(--vr-lavender-text);
+}
+
+.sol-detail__respuesta strong {
+    display: flex;
+    align-items: center;
+    gap: var(--vr-space-1);
+    font-size: var(--vr-fs-sm);
+}
+
+.sol-detail__respuesta p {
+    margin: var(--vr-space-2) 0 0;
+    font-size: var(--vr-fs-sm);
+    white-space: pre-wrap;
+}
+
+.sol-detail__respuesta small {
+    display: block;
+    margin-top: var(--vr-space-1);
+    font-size: var(--vr-fs-xs);
+    opacity: 0.8;
+}
+
+.sol-detail__form {
+    display: grid;
+    gap: var(--vr-space-2);
+}
+
+.sol-detail__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--vr-space-2);
+}
+
+.sol-detail__select {
+    display: grid;
+    gap: 2px;
+    font-size: var(--vr-fs-xs);
+    color: var(--vr-text-muted);
+}
+
+.sol-detail__select select {
+    min-height: var(--vr-tap-min);
+    padding: 0.4rem 0.6rem;
+    border: 1.5px solid var(--vr-border-strong);
+    border-radius: var(--vr-radius-sm);
+    background-color: var(--vr-surface);
+    font: inherit;
+    font-size: var(--vr-fs-sm);
+}
+
+/* ---------- Vista del cliente ---------- */
+.ms-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--vr-space-4);
+}
+
+.ms-item {
+    padding: var(--vr-space-4);
+    border: 1px solid var(--vr-border);
+    border-radius: var(--vr-radius-md);
+    background-color: var(--vr-surface);
+    box-shadow: var(--vr-shadow-sm);
+}
+
+.ms-item__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--vr-space-2);
+    margin-bottom: var(--vr-space-3);
+}
+
+.ms-item__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--vr-space-2);
+}
+
+.ms-item__fecha {
+    font-size: var(--vr-fs-xs);
+    color: var(--vr-text-muted);
+}
+
+.ms-item__texto {
+    margin: 0 0 var(--vr-space-2);
+    font-size: var(--vr-fs-sm);
+    line-height: var(--vr-lh-body);
+    white-space: pre-wrap;
+}
+
+.ms-item__meta {
+    margin: 0 0 var(--vr-space-3);
+    font-size: var(--vr-fs-xs);
+    color: var(--vr-text-muted);
+}
+
+.ms-item__respuesta {
+    padding: var(--vr-space-3);
+    border-radius: var(--vr-radius-sm);
+    background-color: var(--vr-lavender);
+    color: var(--vr-lavender-text);
+}
+
+.ms-item__respuesta strong {
+    display: flex;
+    align-items: center;
+    gap: var(--vr-space-1);
+    font-size: var(--vr-fs-sm);
+}
+
+.ms-item__respuesta p {
+    margin: var(--vr-space-2) 0 0;
+    font-size: var(--vr-fs-sm);
+    white-space: pre-wrap;
+}
+
+.ms-item__respuesta small {
+    display: block;
+    margin-top: var(--vr-space-1);
+    font-size: var(--vr-fs-xs);
+    opacity: 0.8;
+}
+
+.ms-item__espera {
+    display: flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    margin: 0;
+    padding: var(--vr-space-2) var(--vr-space-3);
+    border-radius: var(--vr-radius-sm);
+    background-color: var(--vr-surface-tint);
+    font-size: var(--vr-fs-xs);
+    color: var(--vr-text-muted);
+}

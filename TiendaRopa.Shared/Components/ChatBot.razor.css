@@ -1,0 +1,659 @@
+/* ============================================================
+   Chatbot de Velvet Rose (componente ChatBot)
+   Mobile-first: botón flotante + panel a pantalla casi completa
+   en móvil; panel lateral en escritorio (≥1024px).
+   Tokens: marfil de fondo, frambuesa en CTA, ciruela en detalles.
+   ============================================================ */
+
+/* ---- Botón flotante ---- */
+.vr-chat__fab {
+    position: fixed;
+    right: calc(var(--vr-space-4) + var(--vr-safe-right));
+    /* Por encima de la barra de navegación móvil y del safe area. */
+    bottom: calc(var(--vr-bottomnav-h) + var(--vr-safe-bottom) + var(--vr-space-4));
+    /* Por encima del fondo oscurecido (58) para poder cerrarlo; el panel (60)
+       lo tapa cuando está abierto y el botón se oculta (is-visible). */
+    z-index: 60;
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background-color: var(--vr-primary);
+    color: var(--vr-primary-contrast);
+    box-shadow: var(--vr-shadow-lg);
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(12px) scale(0.9);
+    transition: opacity var(--vr-dur) var(--vr-ease),
+                transform var(--vr-dur) var(--vr-ease),
+                visibility 0s linear var(--vr-dur),
+                background-color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.vr-chat__fab.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+.vr-chat__fab:hover {
+    background-color: var(--vr-primary-hover);
+}
+
+.vr-chat__fab:active {
+    background-color: var(--vr-primary-active);
+    transform: translateY(1px) scale(0.98);
+}
+
+/* ---- Fondo oscurecido (sólo móvil) ---- */
+.vr-chat__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 58;
+    background-color: rgba(43, 29, 47, 0.45);
+    animation: vr-chat-fade var(--vr-dur) var(--vr-ease);
+}
+
+/* ---- Panel ---- */
+.vr-chat__panel {
+    position: fixed;
+    z-index: 60;
+    /* Móvil: casi pantalla completa. Se apoya SOBRE la barra de navegación
+       inferior (que sigue accesible) y respeta el safe area de arriba. */
+    top: calc(var(--vr-safe-top) + var(--vr-space-2));
+    right: var(--vr-safe-right);
+    left: var(--vr-safe-left);
+    bottom: calc(var(--vr-bottomnav-h) + var(--vr-safe-bottom) + var(--vr-space-2));
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background-color: var(--vr-surface);
+    border: 1px solid var(--vr-border);
+    border-radius: var(--vr-radius-lg);
+    box-shadow: var(--vr-shadow-lg);
+    overflow: hidden;
+    transform: translateY(16px);
+    opacity: 0;
+    visibility: hidden;
+    transition: transform var(--vr-dur) var(--vr-ease),
+                opacity var(--vr-dur) var(--vr-ease),
+                visibility 0s linear var(--vr-dur);
+}
+
+.vr-chat__panel.is-open {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+    transition: transform var(--vr-dur) var(--vr-ease),
+                opacity var(--vr-dur) var(--vr-ease),
+                visibility 0s;
+}
+
+/* ---- Encabezado ---- */
+.vr-chat__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--vr-space-2);
+    padding: var(--vr-space-3) var(--vr-space-3) var(--vr-space-3) var(--vr-space-4);
+    background-color: var(--vr-surface-soft);
+    border-bottom: 1px solid var(--vr-border);
+    flex: none;
+}
+
+.vr-chat__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--vr-space-3);
+    min-width: 0;
+}
+
+.vr-chat__avatar {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border-radius: 50%;
+    background-color: var(--vr-primary-soft);
+    color: var(--vr-primary);
+}
+
+.vr-chat__titles {
+    min-width: 0;
+}
+
+.vr-chat__name {
+    margin: 0;
+    font-family: var(--vr-font-display);
+    font-size: var(--vr-fs-md);
+    font-weight: 700;
+    color: var(--vr-plum-strong);
+    line-height: 1.2;
+}
+
+.vr-chat__status {
+    margin: 0;
+    font-size: var(--vr-fs-xs);
+    color: var(--vr-text-muted);
+}
+
+.vr-chat__close {
+    display: grid;
+    place-items: center;
+    width: var(--vr-tap-min);
+    height: var(--vr-tap-min);
+    flex: none;
+    border: 0;
+    border-radius: 50%;
+    background-color: transparent;
+    color: var(--vr-plum-strong);
+    cursor: pointer;
+    transition: background-color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.vr-chat__close:hover {
+    background-color: var(--vr-primary-soft);
+    color: var(--vr-primary);
+}
+
+/* ---- Mensajes ---- */
+.vr-chat__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
+    gap: var(--vr-space-3);
+    padding: var(--vr-space-4);
+    background-color: var(--vr-bg);
+}
+
+.vr-chat__msg {
+    display: flex;
+    max-width: 100%;
+}
+
+.vr-chat__msg--user {
+    justify-content: flex-end;
+}
+
+.vr-chat__msg--assistant {
+    justify-content: flex-start;
+}
+
+.vr-chat__bubble {
+    max-width: 88%;
+    padding: var(--vr-space-3) var(--vr-space-4);
+    border-radius: var(--vr-radius-lg);
+    background-color: var(--vr-surface);
+    border: 1px solid var(--vr-border);
+    box-shadow: var(--vr-shadow-sm);
+    overflow-wrap: anywhere;
+}
+
+.vr-chat__msg--user .vr-chat__bubble {
+    background-color: var(--vr-primary);
+    border-color: var(--vr-primary);
+    color: var(--vr-primary-contrast);
+    border-bottom-right-radius: var(--vr-radius-sm);
+}
+
+.vr-chat__msg--assistant .vr-chat__bubble {
+    border-bottom-left-radius: var(--vr-radius-sm);
+}
+
+.vr-chat__msg.is-error .vr-chat__bubble {
+    background-color: var(--vr-danger-bg);
+    border-color: var(--vr-danger);
+    color: var(--vr-danger);
+}
+
+.vr-chat__text {
+    margin: 0;
+    font-size: var(--vr-fs-sm);
+    line-height: var(--vr-lh-body);
+    white-space: pre-wrap;
+}
+
+/* ---- Indicador de escritura ---- */
+.vr-chat__bubble--typing {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: var(--vr-space-4);
+}
+
+.vr-chat__bubble--typing span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: var(--vr-plum-soft);
+    animation: vr-chat-typing 1.1s infinite ease-in-out;
+}
+
+.vr-chat__bubble--typing span:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.vr-chat__bubble--typing span:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+@keyframes vr-chat-typing {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+    30% { transform: translateY(-4px); opacity: 1; }
+}
+
+@keyframes vr-chat-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ---- Opciones de pedido ---- */
+.vr-chat__options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--vr-space-2);
+    margin-top: var(--vr-space-3);
+}
+
+.vr-chat__option {
+    display: flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    width: 100%;
+    min-height: var(--vr-tap-min);
+    padding: var(--vr-space-2) var(--vr-space-3);
+    border: 1px solid var(--vr-border-strong);
+    border-radius: var(--vr-radius-md);
+    background-color: var(--vr-surface);
+    color: var(--vr-plum-strong);
+    font: inherit;
+    font-size: var(--vr-fs-sm);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--vr-dur-fast) var(--vr-ease),
+                border-color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.vr-chat__option:hover {
+    background-color: var(--vr-primary-soft);
+    border-color: var(--vr-primary);
+}
+
+.vr-chat__option-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.vr-chat__option-text strong {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.vr-chat__option-text small {
+    color: var(--vr-text-muted);
+    font-size: var(--vr-fs-xs);
+}
+
+/* ---- Acciones propuestas ---- */
+.vr-chat__actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--vr-space-3);
+    margin-top: var(--vr-space-3);
+}
+
+.vr-chat__action {
+    padding: var(--vr-space-3);
+    border: 1px solid var(--vr-lavender);
+    border-radius: var(--vr-radius-md);
+    background-color: var(--vr-lavender);
+    color: var(--vr-lavender-text);
+}
+
+.vr-chat__action-head {
+    display: flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    font-size: var(--vr-fs-sm);
+    margin-bottom: var(--vr-space-2);
+}
+
+.vr-chat__action-detail {
+    margin: 0 0 var(--vr-space-2);
+    font-size: var(--vr-fs-sm);
+    line-height: var(--vr-lh-snug);
+}
+
+.vr-chat__action-note {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--vr-space-1);
+    margin: 0 0 var(--vr-space-3);
+    font-size: var(--vr-fs-xs);
+    color: var(--vr-plum-soft);
+}
+
+.vr-chat__action-btns {
+    display: flex;
+    gap: var(--vr-space-2);
+    flex-wrap: wrap;
+}
+
+.vr-chat__action-btn {
+    flex: 1 1 auto;
+    min-height: var(--vr-tap-min);
+    padding: 0.5rem 0.9rem;
+    border: 1.5px solid var(--vr-plum-soft);
+    border-radius: var(--vr-radius-pill);
+    background-color: transparent;
+    color: var(--vr-lavender-text);
+    font: inherit;
+    font-size: var(--vr-fs-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color var(--vr-dur-fast) var(--vr-ease),
+                color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.vr-chat__action-btn:hover {
+    background-color: rgba(92, 45, 105, 0.12);
+}
+
+.vr-chat__action-btn.is-confirm {
+    background-color: var(--vr-primary);
+    border-color: var(--vr-primary);
+    color: var(--vr-primary-contrast);
+}
+
+.vr-chat__action-btn.is-confirm:hover {
+    background-color: var(--vr-primary-hover);
+}
+
+.vr-chat__action-state {
+    margin: var(--vr-space-2) 0 0;
+    font-size: var(--vr-fs-xs);
+    font-weight: 600;
+    color: var(--vr-plum-soft);
+}
+
+/* ---- Llamado a iniciar sesión ---- */
+.vr-chat__login {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--vr-space-2);
+    margin-top: var(--vr-space-3);
+}
+
+.vr-chat__login-note {
+    margin: 0;
+    font-size: var(--vr-fs-xs);
+    color: var(--vr-text-muted);
+}
+
+/* ---- Aviso de acción (confirmación/cancelación) ---- */
+.vr-chat__aviso {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--vr-space-2);
+    flex: none;
+    margin: 0;
+    padding: var(--vr-space-2) var(--vr-space-4);
+    background-color: var(--vr-surface-tint);
+    border-top: 1px solid var(--vr-border);
+    font-size: var(--vr-fs-xs);
+    color: var(--vr-plum-strong);
+}
+
+/* ---- Solicitud: teléfono y formulario ---- */
+.vr-chat__action-telefono {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--vr-space-1);
+    margin: 0 0 var(--vr-space-2);
+    font-size: var(--vr-fs-xs);
+    color: var(--vr-lavender-text);
+}
+
+.vr-chat__action-telefono strong {
+    font-weight: 700;
+}
+
+.vr-chat__action-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--vr-space-1);
+    margin-top: var(--vr-space-2);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--vr-primary);
+    font: inherit;
+    font-size: var(--vr-fs-xs);
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.vr-chat__action-form {
+    display: grid;
+    gap: var(--vr-space-2);
+    margin-top: var(--vr-space-3);
+    padding: var(--vr-space-3);
+    border-radius: var(--vr-radius-sm);
+    background-color: var(--vr-surface);
+}
+
+.vr-chat__action-label {
+    font-size: var(--vr-fs-xs);
+    font-weight: 700;
+    color: var(--vr-text-muted);
+}
+
+.vr-chat__action-input {
+    width: 100%;
+    min-height: var(--vr-tap-min);
+    padding: 0.55rem 0.7rem;
+    border: 1.5px solid var(--vr-border-strong);
+    border-radius: var(--vr-radius-sm);
+    background-color: var(--vr-surface);
+    font: inherit;
+    font-size: var(--vr-fs-sm);
+}
+
+.vr-chat__action-input:focus {
+    outline: 2px solid var(--vr-focus);
+    outline-offset: 1px;
+    border-color: var(--vr-primary);
+}
+
+.vr-chat__action-check {
+    display: flex;
+    align-items: center;
+    gap: var(--vr-space-2);
+    font-size: var(--vr-fs-xs);
+    color: var(--vr-text-muted);
+}
+
+/* ---- Sugerencias ---- */.vr-chat__suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--vr-space-2);
+    margin-top: var(--vr-space-1);
+}
+
+.vr-chat__chip {
+    min-height: 40px;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid var(--vr-primary);
+    border-radius: var(--vr-radius-pill);
+    background-color: var(--vr-surface);
+    color: var(--vr-primary);
+    font: inherit;
+    font-size: var(--vr-fs-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color var(--vr-dur-fast) var(--vr-ease),
+                color var(--vr-dur-fast) var(--vr-ease);
+}
+
+.vr-chat__chip:hover {
+    background-color: var(--vr-primary);
+    color: var(--vr-primary-contrast);
+}
+
+/* ---- Intro (chat vacío) ---- */
+.vr-chat__intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--vr-space-2);
+    padding: var(--vr-space-6) var(--vr-space-4);
+    color: var(--vr-text-muted);
+}
+
+.vr-chat__intro-icon {
+    color: var(--vr-primary);
+    opacity: 0.75;
+}
+
+.vr-chat__intro-title {
+    margin: 0;
+    font-family: var(--vr-font-display);
+    font-size: var(--vr-fs-lg);
+    font-weight: 700;
+    color: var(--vr-plum-strong);
+}
+
+.vr-chat__intro-text {
+    margin: 0;
+    font-size: var(--vr-fs-sm);
+    max-width: 34ch;
+}
+
+/* ---- Campo de escritura ---- */
+.vr-chat__composer {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--vr-space-2);
+    flex: none;
+    padding: var(--vr-space-3);
+    background-color: var(--vr-surface-soft);
+    border-top: 1px solid var(--vr-border);
+}
+
+.vr-chat__input {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: var(--vr-tap-min);
+    max-height: 120px;
+    padding: 0.7rem 0.9rem;
+    border: 1.5px solid var(--vr-border-strong);
+    border-radius: var(--vr-radius-lg);
+    background-color: var(--vr-surface);
+    color: var(--vr-text);
+    font: inherit;
+    font-size: var(--vr-fs-sm);
+    line-height: 1.4;
+    resize: none;
+}
+
+.vr-chat__input::placeholder {
+    color: var(--vr-text-subtle);
+}
+
+.vr-chat__input:focus {
+    outline: 2px solid var(--vr-focus);
+    outline-offset: 1px;
+    border-color: var(--vr-primary);
+}
+
+.vr-chat__send {
+    display: grid;
+    place-items: center;
+    width: var(--vr-tap-min);
+    height: var(--vr-tap-min);
+    flex: none;
+    border: 0;
+    border-radius: 50%;
+    background-color: var(--vr-primary);
+    color: var(--vr-primary-contrast);
+    cursor: pointer;
+    transition: background-color var(--vr-dur-fast) var(--vr-ease),
+                opacity var(--vr-dur-fast) var(--vr-ease);
+}
+
+.vr-chat__send:hover:not(:disabled) {
+    background-color: var(--vr-primary-hover);
+}
+
+.vr-chat__send:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.vr-chat__sr-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+/* ---- Escritorio: panel lateral + sin fondo oscurecido ---- */
+@media (min-width: 1024px) {
+    .vr-chat__panel {
+        top: calc(var(--vr-safe-top) + var(--vr-header-h) + var(--vr-space-4));
+        left: auto;
+        right: calc(var(--vr-space-4) + var(--vr-safe-right));
+        /* En escritorio no hay barra inferior: el panel baja hasta el borde. */
+        bottom: calc(var(--vr-safe-bottom) + var(--vr-space-4));
+        width: 400px;
+        max-width: calc(100vw - var(--vr-sidebar-w) - var(--vr-space-8));
+        border-radius: var(--vr-radius-xl);
+        transform: translateX(24px);
+    }
+
+    .vr-chat__panel.is-open {
+        transform: translateX(0);
+    }
+
+    .vr-chat__backdrop {
+        display: none;
+    }
+
+    .vr-chat__fab {
+        bottom: calc(var(--vr-safe-bottom) + var(--vr-space-5));
+    }
+}
+
+/* ---- Preferencia de movimiento reducido ---- */
+@media (prefers-reduced-motion: reduce) {
+    .vr-chat__panel,
+    .vr-chat__fab {
+        transition: none;
+    }
+
+    .vr-chat__bubble--typing span {
+        animation: none;
+        opacity: 0.6;
+    }
+
+    .vr-chat__backdrop {
+        animation: none;
+    }
+}

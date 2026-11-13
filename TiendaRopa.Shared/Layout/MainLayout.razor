@@ -2,6 +2,7 @@
 @implements IDisposable
 @inject NavigationManager Navigation
 @inject TiendaRopa.Shared.Services.SesionService Sesion
+@using TiendaRopa.Contracts.Identidad
 
 <div class="app-shell" @onkeydown="HandleKeyDown">
 
@@ -67,6 +68,14 @@
                             <span>Mis pedidos</span>
                         </a>
                     </li>
+                    <li>
+                        <a href="/mis-solicitudes"
+                           class="@(IsActive("/mis-solicitudes", false) ? "is-active" : null)"
+                           aria-current="@(IsActive("/mis-solicitudes", false) ? "page" : null)">
+                            <AppIcon Icon="forum" Size="22" />
+                            <span>Mis solicitudes</span>
+                        </a>
+                    </li>
                     @if (Sesion.EsAdministrador)
                     {
                         <li>
@@ -75,6 +84,28 @@
                                aria-current="@(IsActive("/admin", false) ? "page" : null)">
                                 <AppIcon Icon="admin_panel_settings" Size="22" />
                                 <span>Administración</span>
+                            </a>
+                        </li>
+                    }
+                    @if (Sesion.TienePermiso(Permisos.VerSolicitudes))
+                    {
+                        <li>
+                            <a href="/admin/solicitudes"
+                               class="@(IsActive("/admin/solicitudes", false) ? "is-active" : null)"
+                               aria-current="@(IsActive("/admin/solicitudes", false) ? "page" : null)">
+                                <AppIcon Icon="forum" Size="22" />
+                                <span>Solicitudes</span>
+                            </a>
+                        </li>
+                    }
+                    @if (Sesion.TienePermiso(Permisos.VerPedidos) && !Sesion.EsAdministrador)
+                    {
+                        <li>
+                            <a href="/admin/pedidos"
+                               class="@(IsActive("/admin/pedidos", false) ? "is-active" : null)"
+                               aria-current="@(IsActive("/admin/pedidos", false) ? "page" : null)">
+                                <AppIcon Icon="receipt_long" Size="22" />
+                                <span>Pedidos</span>
                             </a>
                         </li>
                     }
@@ -114,6 +145,14 @@
                         <span>Mis pedidos</span>
                     </a>
                 </li>
+                <li>
+                    <a href="/mis-solicitudes"
+                       class="@(IsActive("/mis-solicitudes", false) ? "is-active" : null)"
+                       aria-current="@(IsActive("/mis-solicitudes", false) ? "page" : null)">
+                        <AppIcon Icon="forum" Size="22" />
+                        <span>Mis solicitudes</span>
+                    </a>
+                </li>
                 @if (Sesion.EsAdministrador)
                 {
                     <li>
@@ -122,6 +161,28 @@
                            aria-current="@(IsActive("/admin", false) ? "page" : null)">
                             <AppIcon Icon="admin_panel_settings" Size="22" />
                             <span>Administración</span>
+                        </a>
+                    </li>
+                }
+                @if (Sesion.TienePermiso(Permisos.VerSolicitudes))
+                {
+                    <li>
+                        <a href="/admin/solicitudes"
+                           class="@(IsActive("/admin/solicitudes", false) ? "is-active" : null)"
+                           aria-current="@(IsActive("/admin/solicitudes", false) ? "page" : null)">
+                            <AppIcon Icon="forum" Size="22" />
+                            <span>Solicitudes</span>
+                        </a>
+                    </li>
+                }
+                @if (Sesion.TienePermiso(Permisos.VerPedidos) && !Sesion.EsAdministrador)
+                {
+                    <li>
+                        <a href="/admin/pedidos"
+                           class="@(IsActive("/admin/pedidos", false) ? "is-active" : null)"
+                           aria-current="@(IsActive("/admin/pedidos", false) ? "page" : null)">
+                            <AppIcon Icon="receipt_long" Size="22" />
+                            <span>Pedidos</span>
                         </a>
                     </li>
                 }
@@ -154,6 +215,10 @@
             </a>
         }
     </nav>
+
+    @* Asistente conversacional: disponible desde Inicio, Catálogo, Detalle,
+       Carrito y Mis Pedidos. La conversación se conserva al cerrar y reabrir. *@
+    <ChatBot />
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>

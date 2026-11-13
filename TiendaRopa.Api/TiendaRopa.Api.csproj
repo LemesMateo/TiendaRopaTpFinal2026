@@ -34,6 +34,21 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.17.10" />
+
+    <!-- Asistente conversacional con Gemini (Function Calling). -->
+    <PackageReference Include="Google.GenAI" Version="2.1.0" />
+
+    <!-- Google.Apis.Auth (transitivo de Google.GenAI) arrastra Pkcs 9.0.11,
+         con vulnerabilidades conocidas (GHSA-846f-f764-76mx / GHSA-2fmv-rv2c-59x7,
+         parcheadas en 9.0.21). Se fija la versión parcheada. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="9.0.21" />
   </ItemGroup>
+
+  <!-- Los secretos de usuario de la API (Asistente:Gemini:ApiKey) viven fuera
+       del repositorio. El identificador permite usar 'dotnet user-secrets'
+       sin que la clave entre en appsettings.json ni en el control de versiones. -->
+  <PropertyGroup>
+    <UserSecretsId>velvetrose-api-3f7c1d92</UserSecretsId>
+  </PropertyGroup>
 
 </Project>
